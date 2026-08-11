@@ -5,6 +5,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { ScopedPicker } from './components/ScopedPicker';
 import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
+import { Footer } from './components/Footer';
 import { SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS } from './seedData';
 import { storageService, STORAGE_KEYS } from './services/storageService';
 
@@ -115,7 +116,7 @@ const MainApp = () => {
     };
   }, []);
 
-  // Save Marks Entry Handler (With Explicit Deletion Handling!)
+  // Save Marks Entry Handler
   const handleSaveMarks = async (std, subject, inputValues) => {
     const key = `${std}|${subject}`;
     const updatedKeyObj = { ...(marksMap[key] || {}) };
@@ -130,7 +131,7 @@ const MainApp = () => {
           at: now
         };
       } else {
-        delete updatedKeyObj[sid]; // Explicitly remove cleared student entry!
+        delete updatedKeyObj[sid];
       }
     });
 
@@ -138,12 +139,10 @@ const MainApp = () => {
     if (Object.keys(updatedKeyObj).length > 0) {
       nextMarksMap[key] = updatedKeyObj;
     } else {
-      delete nextMarksMap[key]; // Course is completely cleared!
+      delete nextMarksMap[key];
     }
 
     setMarksMap(nextMarksMap);
-
-    // Save to Granular Cloud Firestore Document
     await storageService.saveClassSubjectMarks(std, subject, updatedKeyObj, currentUser);
   };
 
@@ -170,9 +169,9 @@ const MainApp = () => {
   }
 
   return (
-    <div id="app">
+    <div id="app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Topbar currentView={currentView} setView={setView} />
-      <main>
+      <main style={{ flex: 1 }}>
         <div className="wrap">
           {currentView === 'entry' && (
             <ScopedPicker
@@ -216,6 +215,9 @@ const MainApp = () => {
           )}
         </div>
       </main>
+
+      {/* SLEEK MASKAN1447 & LAHERI72 DASHBOARD FOOTER */}
+      <Footer />
     </div>
   );
 };
