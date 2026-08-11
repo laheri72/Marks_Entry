@@ -453,6 +453,7 @@ main { flex: 1; width: 100%; }
 
 .marks-input:focus { outline: none; border-color: var(--red); background: rgba(180, 56, 44, 0.04); }
 .marks-input.filled { border-color: var(--green-ok); color: var(--green-ok); }
+.marks-input.exceeded { border-color: var(--red) !important; color: var(--red) !important; background: rgba(180, 56, 44, 0.08) !important; }
 .marks-of { font-size: 12px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
 
 /* Sticky Floating Action Bar */

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { exportService } from '../services/exportService';
 
 export const LedgerRoster = ({
@@ -21,12 +21,12 @@ export const LedgerRoster = ({
   const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Quick Fill Dropdown State
+  // Quick Fill Menu State
   const [showQuickFillMenu, setShowQuickFillMenu] = useState(false);
 
   const inputRefs = useRef({});
 
-  // 1. INITIALIZE LOCAL VALUES WHEN CLASS OR SUBJECT CHANGES (ONLY ON STD/SUBJECT SWITCH)
+  // Initialize local values when Class or Subject changes
   useEffect(() => {
     const initial = {};
     students.forEach((st) => {
@@ -40,48 +40,80 @@ export const LedgerRoster = ({
     setSearchQuery('');
     inputRefs.current = {};
 
-    // Auto-focus first student input when switching class or subject
     setTimeout(() => {
       const firstRef = inputRefs.current[0];
       if (firstRef) {
         firstRef.focus();
       }
     }, 60);
-  }, [std, subject]); // Dependent ONLY on std & subject - NOT savedMarks or students!
+  }, [std, subject]);
 
+  // Input change handler with strict Max Marks validation & Auto-capping
   const handleInputChange = (studentId, rawValue) => {
-    // Sanitize: allow numbers, single decimal point, or 'A' (Absent) / 'E' (Exempt)
+    // Sanitize input: allow digits, single decimal, or 'A' (Absent) / 'E' (Exempt)
     let clean = rawValue.toUpperCase().replace(/[^0-9.AE]/g, '');
     
-    // Disallow multiple decimal points
+    // Disallow multiple decimals
     const parts = clean.split('.');
     if (parts.length > 2) {
       clean = parts[0] + '.' + parts.slice(1).join('');
     }
 
+    // Check if numeric value exceeds maxMarks
+    if (clean !== '' && clean !== 'A' && clean !== 'E') {
+      const num = parseFloat(clean);
+      if (!isNaN(num) && num > maxMarks) {
+        // Auto-cap to maxMarks and inform teacher
+        clean = String(maxMarks);
+        setStatusMessage(`⚠️ Mark auto-capped to Max Marks (${maxMarks}).`);
+      } else {
+        setStatusMessage('Unsaved changes — press Enter or click Save marks.');
+      }
+    } else {
+      setStatusMessage('Unsaved changes — press Enter or click Save marks.');
+    }
+
     setLocalValues((prev) => ({ ...prev, [studentId]: clean }));
-    setStatusMessage('Unsaved changes — press Enter or click Save marks.');
     setShowStamp(false);
   };
 
+  // Sanitize all entries prior to persisting
+  const getSanitizedLocalValues = () => {
+    const sanitized = {};
+    Object.entries(localValues).forEach(([sid, val]) => {
+      if (val === '' || val === null || val === undefined) return;
+      if (val === 'A' || val === 'E') {
+        sanitized[sid] = val;
+      } else {
+        const num = parseFloat(val);
+        if (!isNaN(num)) {
+          // Clamp value between 0 and maxMarks
+          const clamped = Math.min(Math.max(0, num), maxMarks);
+          sanitized[sid] = String(clamped);
+        }
+      }
+    });
+    return sanitized;
+  };
+
   const executeSave = async () => {
-    await onSave(std, subject, localValues);
+    const sanitized = getSanitizedLocalValues();
+    setLocalValues(sanitized);
+    await onSave(std, subject, sanitized);
     setStatusMessage('All marks saved securely.');
     setShowStamp(true);
   };
 
-  // Keyboard Navigation: Enter, Shift+Enter, Up/Down Arrows
+  // Keyboard Navigation
   const handleKeyDown = (e, index) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       executeSave();
       if (e.shiftKey) {
-        // Jump to previous student
         if (index > 0 && inputRefs.current[index - 1]) {
           inputRefs.current[index - 1].focus();
         }
       } else {
-        // Jump to next student
         if (index + 1 < paginatedStudents.length && inputRefs.current[index + 1]) {
           inputRefs.current[index + 1].focus();
         }
@@ -99,7 +131,7 @@ export const LedgerRoster = ({
     }
   };
 
-  // Quick Increment Touch Adjusters
+  // Quick Increment Adjusters
   const adjustMark = (studentId, delta) => {
     const currentVal = parseFloat(localValues[studentId] || 0);
     const nextVal = Math.min(Math.max(0, currentVal + delta), maxMarks);
@@ -108,15 +140,16 @@ export const LedgerRoster = ({
 
   // Bulk Quick Fill Actions
   const handleQuickFillEmpty = (fillValue) => {
+    const targetVal = String(Math.min(parseFloat(fillValue) || maxMarks, maxMarks));
     const nextValues = { ...localValues };
     students.forEach(st => {
       if (!nextValues[st.id] || nextValues[st.id] === '') {
-        nextValues[st.id] = String(fillValue);
+        nextValues[st.id] = targetVal;
       }
     });
     setLocalValues(nextValues);
     setShowQuickFillMenu(false);
-    setStatusMessage(`Filled all empty entries with ${fillValue}. Press Save.`);
+    setStatusMessage(`Filled empty entries with ${targetVal}. Press Save.`);
   };
 
   const handleQuickClearAll = () => {
@@ -160,7 +193,7 @@ export const LedgerRoster = ({
   const startIndex = pageSize === 'ALL' ? 0 : (currentPage - 1) * pageSize;
   const paginatedStudents = pageSize === 'ALL' ? filteredStudents : filteredStudents.slice(startIndex, startIndex + pageSize);
 
-  // Live Statistics Calculations
+  // Guarded Live Analytics Calculations
   let filledCount = 0;
   let totalScore = 0;
   let highestMark = 0;
@@ -171,10 +204,12 @@ export const LedgerRoster = ({
     if (val !== undefined && val !== '' && val !== 'A' && val !== 'E') {
       const num = parseFloat(val);
       if (!isNaN(num)) {
+        // Strict guard: clamp number between 0 and maxMarks for mathematical sanity
+        const clampedNum = Math.min(Math.max(0, num), maxMarks);
         filledCount++;
-        totalScore += num;
-        if (num > highestMark) highestMark = num;
-        if (num < lowestMark) lowestMark = num;
+        totalScore += clampedNum;
+        if (clampedNum > highestMark) highestMark = clampedNum;
+        if (clampedNum < lowestMark) lowestMark = clampedNum;
       }
     }
   });
@@ -191,7 +226,7 @@ export const LedgerRoster = ({
           <div className="meta">{students.length} students enrolled</div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px' }}>
           {/* Quick Actions Dropdown */}
           <div style={{ position: 'relative' }}>
             <button
@@ -226,7 +261,7 @@ export const LedgerRoster = ({
         </div>
       </div>
 
-      {/* 2. LIVE ANALYTICS DASHBOARD HEADER */}
+      {/* 2. GUARDED ANALYTICS DASHBOARD HEADER */}
       <div className="analytics-bar">
         <div className="stat-card">
           <div className="stat-label">Completion</div>
@@ -295,7 +330,7 @@ export const LedgerRoster = ({
         </div>
       </div>
 
-      {/* 4. PAGINATED ROSTER ROWS WITH STABLE INPUT REFS */}
+      {/* 4. PAGINATED ROSTER ROWS WITH INPUT VALIDATION */}
       <div className="ledger-rows">
         {paginatedStudents.length === 0 ? (
           <div style={{ padding: '30px', textAlign: 'center', color: 'var(--ink-faint)', fontSize: '13.5px' }}>
@@ -305,6 +340,9 @@ export const LedgerRoster = ({
           paginatedStudents.map((st, idx) => {
             const val = localValues[st.id] ?? '';
             const isFilled = val !== '';
+            const isNumeric = val !== '' && val !== 'A' && val !== 'E';
+            const numVal = isNumeric ? parseFloat(val) : 0;
+            const isExceeded = isNumeric && !isNaN(numVal) && numVal > maxMarks;
 
             return (
               <div key={st.id} className="ledger-row">
@@ -319,17 +357,22 @@ export const LedgerRoster = ({
                     <button type="button" onClick={() => handleInputChange(st.id, String(maxMarks))} title="Full Marks">Max</button>
                   </div>
 
-                  <input
-                    ref={(el) => (inputRefs.current[idx] = el)}
-                    className={`marks-input ${isFilled ? 'filled' : ''}`}
-                    type="text"
-                    inputMode="decimal"
-                    value={val}
-                    placeholder="—"
-                    onChange={(e) => handleInputChange(st.id, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, idx)}
-                    onBlur={executeSave}
-                  />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input
+                      ref={(el) => (inputRefs.current[idx] = el)}
+                      className={`marks-input ${isFilled ? 'filled' : ''} ${isExceeded ? 'exceeded' : ''}`}
+                      type="text"
+                      inputMode="decimal"
+                      value={val}
+                      placeholder="—"
+                      onChange={(e) => handleInputChange(st.id, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, idx)}
+                      onBlur={executeSave}
+                    />
+                    {isExceeded && (
+                      <AlertTriangle size={14} color="var(--red)" style={{ position: 'absolute', right: '-20px' }} title={`Exceeds Max Marks (${maxMarks})`} />
+                    )}
+                  </div>
                   <span className="marks-of">/ {maxMarks}</span>
                 </div>
               </div>
@@ -344,7 +387,7 @@ export const LedgerRoster = ({
           {statusMessage}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => exportService.exportToCSV(std, subject, sortedStudents, savedMarks, maxMarks)}

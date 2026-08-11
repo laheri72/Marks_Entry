@@ -3,20 +3,22 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export const exportService = {
-  // Export Class Marks Roster to Excel / CSV
+  // Export Class Marks Roster to Excel / CSV with Guarded Values
   exportToCSV(std, subject, students, marksMap, maxMarks) {
     const rows = students.map((st) => {
       const entry = marksMap[st.id];
       const val = entry ? entry.value : '';
       const numVal = parseFloat(val);
-      const pct = !isNaN(numVal) && maxMarks ? ((numVal / maxMarks) * 100).toFixed(1) + '%' : 'N/A';
+      const isNumeric = !isNaN(numVal) && val !== 'A' && val !== 'E';
+      const clampedVal = isNumeric ? Math.min(Math.max(0, numVal), maxMarks) : val;
+      const pct = isNumeric && maxMarks ? ((clampedVal / maxMarks) * 100).toFixed(1) + '%' : 'N/A';
 
       return {
         'Roll Number': st.roll ?? '',
         'Student Name': st.name,
         'Class': std,
         'Subject': subject,
-        'Marks Obtained': val !== '' ? val : 'Not Entered',
+        'Marks Obtained': val !== '' ? clampedVal : 'Not Entered',
         'Max Marks': maxMarks,
         'Percentage': pct,
         'Entered By': entry ? entry.enteredByName : '—',
@@ -59,19 +61,20 @@ export const exportService = {
     doc.text(`Subject: ${subject}`, 100, 38);
     doc.text(`Max Marks: ${maxMarks}`, 160, 38);
 
-    // Statistics Calculation
+    // Guarded Statistics Calculation
     let filledCount = 0;
     let totalScore = 0;
     let highestMark = 0;
 
     students.forEach((st) => {
       const e = marksMap[st.id];
-      if (e && e.value !== '') {
+      if (e && e.value !== '' && e.value !== 'A' && e.value !== 'E') {
         const v = parseFloat(e.value);
         if (!isNaN(v)) {
+          const clampedVal = Math.min(Math.max(0, v), maxMarks);
           filledCount++;
-          totalScore += v;
-          if (v > highestMark) highestMark = v;
+          totalScore += clampedVal;
+          if (clampedVal > highestMark) highestMark = clampedVal;
         }
       }
     });
@@ -94,13 +97,15 @@ export const exportService = {
       const e = marksMap[st.id];
       const val = e ? e.value : '—';
       const numVal = parseFloat(val);
-      const pct = !isNaN(numVal) && maxMarks ? ((numVal / maxMarks) * 100).toFixed(1) + '%' : '—';
+      const isNumeric = !isNaN(numVal) && val !== 'A' && val !== 'E';
+      const clampedVal = isNumeric ? Math.min(Math.max(0, numVal), maxMarks) : val;
+      const pct = isNumeric && maxMarks ? ((clampedVal / maxMarks) * 100).toFixed(1) + '%' : '—';
       const status = e && e.value !== '' ? 'Submitted' : 'Pending';
 
       return [
         st.roll ?? '—',
         st.name,
-        val !== '—' ? `${val} / ${maxMarks}` : '—',
+        val !== '—' ? `${clampedVal} / ${maxMarks}` : '—',
         pct,
         status,
         e ? e.enteredByName : '—'
