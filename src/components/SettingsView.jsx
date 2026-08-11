@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS } from '../seedData';
-import { Plus, Trash2, UserPlus, Shield, Check, Database, Mail, UserCheck, Key } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Shield, Check, Database, Mail, Key, ShieldCheck } from 'lucide-react';
 
 export const SettingsView = ({
   stds,
@@ -14,13 +14,17 @@ export const SettingsView = ({
   setMaxMarks,
   onSaveAll
 }) => {
-  const { currentUser, isAdmin, teachers, addTeacherEmail, removeTeacherEmail, updateTeachersList } = useAuth();
-  const [selectedSettingStd, setSelectedSettingStd] = useState(stds[0] || null);
+  const { currentUser, isAdmin, teachers, addTeacherEmail, toggleAdminRole, removeTeacherEmail, updateTeachersList, getScopedStds } = useAuth();
+  
+  // Scope available classes: Admin sees all, Teacher sees only assigned classes
+  const availableStds = getScopedStds(stds, subjectsByStd);
+  const [selectedSettingStd, setSelectedSettingStd] = useState(availableStds[0] || stds[0] || null);
   const [seedStatus, setSeedStatus] = useState('');
 
-  // New Teacher Email State
+  // New Teacher / Admin Input State
   const [newTeacherEmailInput, setNewTeacherEmailInput] = useState('');
   const [newTeacherNameInput, setNewTeacherNameInput] = useState('');
+  const [newTeacherRoleInput, setNewTeacherRoleInput] = useState('teacher');
 
   // New Class Input State
   const [newStdName, setNewStdName] = useState('');
@@ -36,13 +40,14 @@ export const SettingsView = ({
   // Bulk Student Input State
   const [bulkText, setBulkText] = useState('');
 
-  // Add Authorized Teacher Email
+  // Add Authorized Teacher / Admin Email
   const handleAuthorizeTeacher = async () => {
     if (!newTeacherEmailInput.trim()) return;
-    await addTeacherEmail(newTeacherEmailInput.trim(), newTeacherNameInput.trim());
+    await addTeacherEmail(newTeacherEmailInput.trim(), newTeacherNameInput.trim(), newTeacherRoleInput);
     setNewTeacherEmailInput('');
     setNewTeacherNameInput('');
-    setSeedStatus('✓ Teacher email authorized successfully.');
+    setNewTeacherRoleInput('teacher');
+    setSeedStatus('✓ User email authorized successfully.');
     setTimeout(() => setSeedStatus(''), 4000);
   };
 
@@ -187,46 +192,55 @@ export const SettingsView = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-      {/* ADMIN EXCLUSIVE: TEACHER MANAGEMENT & GOOGLE AUTH PROVISIONING */}
+      {/* ADMIN EXCLUSIVE: TEACHER & ADMIN GOOGLE ACCOUNT AUTHORIZATION */}
       {isAdmin && (
         <div className="panel" style={{ borderLeft: '4px solid var(--blue-admin)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <Key size={20} color="var(--blue-admin)" />
-            <h3 style={{ margin: 0 }}>Teacher Google Account Authorization &amp; Scoped Permissions</h3>
+            <h3 style={{ margin: 0 }}>Teacher &amp; Admin Google Authorization &amp; Scoped Permissions</h3>
           </div>
           <div className="hint">
-            Authorize teacher Google emails. When a teacher signs in with Google, the portal verifies their email against this list and grants access <b>ONLY</b> to their assigned classes.
+            Authorize Google emails and grant Admin or Teacher roles. Teachers see <b>ONLY</b> their assigned classes.
           </div>
 
-          {/* ADD TEACHER EMAIL INPUT */}
+          {/* ADD TEACHER / ADMIN EMAIL INPUT */}
           <div style={{ background: 'var(--paper-deep)', padding: '14px', borderRadius: '8px', border: '1px solid var(--rule)', marginBottom: '18px' }}>
-            <h4 style={{ fontSize: '13.5px', margin: '0 0 10px', color: 'var(--ink)' }}>Authorize New Teacher Google Email</h4>
+            <h4 style={{ fontSize: '13.5px', margin: '0 0 10px', color: 'var(--ink)' }}>Authorize New User Google Email</h4>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <input
-                style={{ flex: 1, minWidth: '220px', padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px' }}
+                style={{ flex: 1.5, minWidth: '220px', padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px' }}
                 type="email"
                 placeholder="Google Email (e.g. teacher.english@msb.edu)"
                 value={newTeacherEmailInput}
                 onChange={e => setNewTeacherEmailInput(e.target.value)}
               />
               <input
-                style={{ flex: 1, minWidth: '160px', padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px' }}
+                style={{ flex: 1, minWidth: '150px', padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px' }}
                 type="text"
-                placeholder="Teacher Name (Optional)"
+                placeholder="Name (Optional)"
                 value={newTeacherNameInput}
                 onChange={e => setNewTeacherNameInput(e.target.value)}
               />
+              <select
+                style={{ padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px', background: '#fff', fontWeight: 600 }}
+                value={newTeacherRoleInput}
+                onChange={e => setNewTeacherRoleInput(e.target.value)}
+              >
+                <option value="teacher">Role: Teacher</option>
+                <option value="admin">Role: Admin</option>
+              </select>
               <button className="btn btn-primary btn-sm" onClick={handleAuthorizeTeacher}>
-                <UserPlus size={14} /> Authorize Teacher Email
+                <UserPlus size={14} /> Authorize Account
               </button>
             </div>
           </div>
 
-          {/* AUTHORIZED TEACHERS LIST & PERMISSION MATRIX */}
+          {/* AUTHORIZED USERS LIST & PERMISSION MATRIX */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {teachers.map((t) => {
               const teacherAssignments = t.assignments || [];
               const isPrimaryAdmin = t.email.toLowerCase() === 'idrislaheri72@gmail.com';
+              const isUserAdmin = t.role === 'admin';
 
               return (
                 <div
@@ -248,25 +262,36 @@ export const SettingsView = ({
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className={`role-badge ${t.role === 'admin' ? 'admin' : ''}`}>
-                        {t.role === 'admin' ? '👑 Primary Admin' : `📚 ${teacherAssignments.length} Assigned Subjects`}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className={`role-badge ${isUserAdmin ? 'admin' : ''}`}>
+                        {isUserAdmin ? '👑 Admin' : `📚 ${teacherAssignments.length} Assigned Subjects`}
                       </span>
 
                       {!isPrimaryAdmin && (
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          style={{ color: 'var(--red)', borderColor: 'var(--red-soft)' }}
-                          onClick={() => removeTeacherEmail(t.id)}
-                          title="Revoke Teacher Access"
-                        >
-                          <Trash2 size={13} /> Revoke
-                        </button>
+                        <>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: '11.5px', padding: '4px 8px' }}
+                            onClick={() => toggleAdminRole(t.id)}
+                            title="Toggle Admin / Teacher Role"
+                          >
+                            <ShieldCheck size={13} color="var(--blue-admin)" /> {isUserAdmin ? 'Demote to Teacher' : 'Promote to Admin'}
+                          </button>
+
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: 'var(--red)', borderColor: 'var(--red-soft)', fontSize: '11.5px', padding: '4px 8px' }}
+                            onClick={() => removeTeacherEmail(t.id)}
+                            title="Revoke Access"
+                          >
+                            <Trash2 size={13} /> Revoke
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {!isPrimaryAdmin && (
+                  {!isUserAdmin && (
                     <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--rule)' }}>
                       <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-soft)', marginBottom: '8px' }}>
                         Assigned Class &amp; Subject Pairs for {t.name}:
@@ -319,7 +344,7 @@ export const SettingsView = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3>Master Classes List</h3>
-            <div className="hint" style={{ margin: 0 }}>Classes currently configured in the school system.</div>
+            <div className="hint" style={{ margin: 0 }}>Classes configured in the school system.</div>
           </div>
 
           {isAdmin && (
@@ -336,7 +361,7 @@ export const SettingsView = ({
         )}
 
         <div className="chip-row" style={{ marginTop: '14px' }}>
-          {stds.map(s => (
+          {availableStds.map(s => (
             <span key={s} className="chip">
               Class {s}
             </span>
@@ -357,7 +382,7 @@ export const SettingsView = ({
         )}
       </div>
 
-      {/* PANEL 3: SUBJECTS & STUDENTS PER CLASS */}
+      {/* PANEL 3: SUBJECTS & STUDENTS PER SCOPED CLASS */}
       <div className="panel">
         <h3>Subjects &amp; Student Rosters</h3>
         <div className="hint">Configure subjects, default max marks, and student rosters per class.</div>
@@ -369,7 +394,7 @@ export const SettingsView = ({
             value={selectedSettingStd || ''}
             onChange={e => setSelectedSettingStd(e.target.value)}
           >
-            {stds.map(s => (
+            {availableStds.map(s => (
               <option key={s} value={s}>Class {s}</option>
             ))}
           </select>

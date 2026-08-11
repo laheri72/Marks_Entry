@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [unauthorizedEmail, setUnauthorizedEmail] = useState(null);
 
-  // Initialize Teachers & Restore Active Auth Session / OAuth Redirect Result
+  // Initialize Teachers & Restore Active Auth Session
   useEffect(() => {
     async function initAuth() {
       let savedTeachers = await storageService.get(STORAGE_KEYS.TEACHERS, null);
@@ -44,10 +44,13 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      // Read Device Local Session
       const activeSession = await storageService.get('tr_active_session', null);
-      if (activeSession) {
+      if (activeSession && activeSession.email) {
         const found = savedTeachers.find(t => t.email.toLowerCase() === activeSession.email?.toLowerCase());
         setCurrentUser(found || activeSession);
+      } else {
+        setCurrentUser(null);
       }
       setLoading(false);
     }
@@ -64,8 +67,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Add New Teacher Email (Admin Function)
-  const addTeacherEmail = async (email, name = '') => {
+  // Add Authorized Teacher / Admin Email (Admin Function)
+  const addTeacherEmail = async (email, name = '', role = 'teacher') => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) return;
 
@@ -76,7 +79,7 @@ export const AuthProvider = ({ children }) => {
       id: 't_' + Date.now(),
       email: cleanEmail,
       name: name.trim() || cleanEmail.split('@')[0].replace('.', ' '),
-      role: cleanEmail === 'idrislaheri72@gmail.com' ? 'admin' : 'teacher',
+      role: cleanEmail === 'idrislaheri72@gmail.com' ? 'admin' : role,
       assignments: []
     };
 
@@ -85,7 +88,25 @@ export const AuthProvider = ({ children }) => {
     return newTeacher;
   };
 
-  // Remove Teacher Email (Admin Function)
+  // Toggle Admin / Teacher Role (Admin Function)
+  const toggleAdminRole = async (teacherId) => {
+    const target = teachers.find(t => t.id === teacherId);
+    if (target?.email.toLowerCase() === 'idrislaheri72@gmail.com') {
+      alert("Primary Admin (idrislaheri72@gmail.com) role cannot be demoted.");
+      return;
+    }
+
+    const updated = teachers.map(t => {
+      if (t.id === teacherId) {
+        const nextRole = t.role === 'admin' ? 'teacher' : 'admin';
+        return { ...t, role: nextRole };
+      }
+      return t;
+    });
+    await updateTeachersList(updated);
+  };
+
+  // Remove Authorized Email (Admin Function)
   const removeTeacherEmail = async (teacherId) => {
     const target = teachers.find(t => t.id === teacherId);
     if (target?.email.toLowerCase() === 'idrislaheri72@gmail.com') {
@@ -97,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     await updateTeachersList(newList);
   };
 
-  // Real Google OAuth Popup / Redirect Handler
+  // Real Google OAuth Handler
   const loginWithGoogleOAuth = async () => {
     setAuthError(null);
     setUnauthorizedEmail(null);
@@ -109,9 +130,9 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error("OAuth error:", e);
       if (e.code === 'auth/unauthorized-domain') {
-        setAuthError("Domain not authorized in Firebase. Please add your site URL to Firebase Console > Auth > Settings > Authorized Domains.");
+        setAuthError("Domain not authorized in Firebase. Add your Vercel URL to Firebase Console > Auth > Settings > Authorized Domains.");
       } else if (e.code === 'auth/operation-not-allowed') {
-        setAuthError("Google Provider not enabled in Firebase Console yet. Please enable Google under Firebase > Auth > Sign-in method.");
+        setAuthError("Google Provider not enabled in Firebase Console yet.");
       } else {
         setAuthError(e.message || "Google Sign-In failed.");
       }
@@ -124,7 +145,7 @@ export const AuthProvider = ({ children }) => {
 
     const email = googleUserObj.email.trim().toLowerCase();
 
-    // Primary Admin Check (idrislaheri72@gmail.com)
+    // Primary Admin Check
     if (email === 'idrislaheri72@gmail.com') {
       let adminProfile = teachers.find(t => t.email.toLowerCase() === email);
       if (!adminProfile) {
@@ -145,14 +166,14 @@ export const AuthProvider = ({ children }) => {
       return adminProfile;
     }
 
-    // Teacher Authorization Check
-    let existingTeacher = teachers.find(t => t.email.toLowerCase() === email);
-    if (existingTeacher) {
-      setCurrentUser(existingTeacher);
-      await storageService.set('tr_active_session', existingTeacher);
-      return existingTeacher;
+    // Teacher / Co-Admin Authorization Check
+    let existingUser = teachers.find(t => t.email.toLowerCase() === email);
+    if (existingUser) {
+      setCurrentUser(existingUser);
+      await storageService.set('tr_active_session', existingUser);
+      return existingUser;
     } else {
-      // User is not on authorized teacher list!
+      // User is not on authorized roster!
       setUnauthorizedEmail(email);
       setCurrentUser(null);
       await storageService.set('tr_active_session', null);
@@ -173,7 +194,7 @@ export const AuthProvider = ({ children }) => {
   // Verification Helper: Is teacher assigned to Class + Subject?
   const isAssigned = (std, subject) => {
     if (!currentUser) return false;
-    if (isAdmin) return true;
+    if (isAdmin) return true; // Admin sees all
     const key = `${std}|${subject}`;
     return (currentUser.assignments || []).includes(key);
   };
@@ -211,6 +232,7 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogleOAuth,
         processGoogleUser,
         addTeacherEmail,
+        toggleAdminRole,
         removeTeacherEmail,
         logout,
         isAssigned,

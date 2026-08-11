@@ -1,5 +1,5 @@
 // Storage Service for The Register
-// Granular Cloud Firestore Sync for Real-Time Multi-Device Assessment Rosters
+// Local Session Isolation & Granular Cloud Firestore Database Sync
 
 import { db } from '../config/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -13,12 +13,23 @@ const STORAGE_KEYS = {
   MARKS: 'tr_marks_v2'
 };
 
-// Helper: Sanitize document IDs for Firestore (replaces slashes and illegal chars)
+// Helper: Sanitize document IDs for Firestore
 const sanitizeDocId = (id) => String(id).replace(/[\/\s()]/g, '_');
 
 export const storageService = {
-  // Read Master Key (Teachers, Stds, Subjects, Students, MaxMarks)
+  // Read Data: Device Session keys read strictly from Local Device Storage
   async get(key, fallback = null) {
+    // 1. Device Local Sessions (MUST NOT sync to shared Cloud DB)
+    if (key === 'tr_active_session') {
+      try {
+        const val = sessionStorage.getItem(key) || localStorage.getItem(key);
+        return val ? JSON.parse(val) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    // 2. School Master Shared Keys (Try Cloud Firestore first)
     try {
       const cleanKey = sanitizeDocId(key);
       const docRef = doc(db, "school_master", cleanKey);
@@ -32,7 +43,7 @@ export const storageService = {
         }
       }
     } catch (cloudErr) {
-      console.warn(`[Firestore Master Read Note] '${key}':`, cloudErr.message);
+      console.warn(`[Firestore Read Note] '${key}':`, cloudErr.message);
     }
 
     // LocalStorage Fallback
@@ -44,8 +55,22 @@ export const storageService = {
     }
   },
 
-  // Write Master Key
+  // Write Data: Device Sessions write ONLY to local device memory
   async set(key, value) {
+    if (key === 'tr_active_session') {
+      try {
+        if (value) {
+          sessionStorage.setItem(key, JSON.stringify(value));
+          localStorage.setItem(key, JSON.stringify(value));
+        } else {
+          sessionStorage.removeItem(key);
+          localStorage.removeItem(key);
+        }
+      } catch (e) {}
+      return;
+    }
+
+    // Save Master Keys to LocalStorage cache + Cloud Firestore DB
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {}
@@ -59,7 +84,6 @@ export const storageService = {
       }, { merge: true });
     } catch (cloudErr) {
       console.error(`[Firestore Master Write Error] '${key}':`, cloudErr.message);
-      throw cloudErr;
     }
   },
 
@@ -120,8 +144,9 @@ export const storageService = {
     }
   },
 
-  // Subscribe to Master Keys (STDS, SUBJECTS, STUDENTS, MARKS)
+  // Subscribe to Master Keys
   subscribeToKey(key, callback) {
+    if (key === 'tr_active_session') return () => {};
     const cleanKey = sanitizeDocId(key);
     try {
       const docRef = doc(db, "school_master", cleanKey);

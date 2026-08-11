@@ -19,16 +19,23 @@ export const ScopedPicker = ({
 }) => {
   const { currentUser, isAdmin, getScopedStds, getScopedSubjects } = useAuth();
   
-  // Grade Filter State (All | Grade 1..7)
+  // Grade Filter State (ALL | Grade 1..7)
   const [activeGradeFilter, setActiveGradeFilter] = useState('ALL');
   const [classSearchQuery, setClassSearchQuery] = useState('');
 
-  // STAGE 1: Scoped Classes List
+  // STAGE 1: Scoped Classes List for Active User
   const availableStds = getScopedStds(stds, subjectsByStd);
+
+  // Dynamically calculate grades that actually have assigned classes for this user
+  const assignedGradesSet = new Set();
+  availableStds.forEach(std => {
+    const match = std.match(/^(\d+)/);
+    if (match) assignedGradesSet.add(match[1]);
+  });
+  const assignedGrades = Array.from(assignedGradesSet).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
   // Filter availableStds by Grade filter and Search query
   const filteredStds = availableStds.filter(std => {
-    // Extract Grade number e.g. "5-A (Boys)" -> 5
     const gradeMatch = std.match(/^(\d+)/);
     const gradeNum = gradeMatch ? gradeMatch[1] : null;
 
@@ -48,7 +55,7 @@ export const ScopedPicker = ({
 
   return (
     <div>
-      {/* STEP 1: CLASS SELECTION WITH GRADE TABS & SEARCH */}
+      {/* STEP 1: CLASS SELECTION WITH DYNAMIC GRADE TABS & SEARCH */}
       <div className="step-block">
         <div className="step-title" style={{ flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -63,7 +70,7 @@ export const ScopedPicker = ({
           )}
         </div>
 
-        {/* GRADE FILTER TAB BAR */}
+        {/* DYNAMIC GRADE FILTER TAB BAR (ONLY SHOWS TAGGED/ASSIGNED GRADES) */}
         {availableStds.length > 0 && (
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ fontSize: '12.5px', color: 'var(--ink-soft)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -74,10 +81,10 @@ export const ScopedPicker = ({
               className={`grade-tab ${activeGradeFilter === 'ALL' ? 'active' : ''}`}
               onClick={() => setActiveGradeFilter('ALL')}
             >
-              All Grades
+              All Assigned ({availableStds.length})
             </button>
 
-            {['1', '2', '3', '4', '5', '6', '7'].map(g => (
+            {assignedGrades.map(g => (
               <button
                 key={g}
                 className={`grade-tab ${activeGradeFilter === g ? 'active' : ''}`}
