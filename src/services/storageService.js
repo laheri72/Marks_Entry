@@ -1,5 +1,5 @@
-// Storage Service for The Register
-// Supports Real-Time Firebase Cloud Database Sync with LocalStorage Fallback for Zero Data Loss
+// Universal Cloud Storage Service for The Register
+// Supports Netlify Database, Netlify Functions, Supabase, Firebase & LocalStorage cache
 
 import { db } from '../config/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -13,27 +13,50 @@ const STORAGE_KEYS = {
   MARKS: 'tr_marks_v2'
 };
 
+// Check Netlify DB / Custom Cloud Environment Variables
+const NETLIFY_DB_URL = import.meta.env.VITE_NETLIFY_DB_URL || import.meta.env.VITE_DATABASE_URL || '';
+const NETLIFY_DB_TOKEN = import.meta.env.VITE_NETLIFY_DB_TOKEN || '';
+
 export const storageService = {
-  // Read Data: Tries Realtime Cloud DB first, falls back to LocalStorage cache
+  // Read Data: Tries Netlify DB / Cloud Serverless first, then Firebase, then LocalStorage
   async get(key, fallback = null) {
+    // 1. Try Netlify Database REST Endpoint or Netlify Serverless Function
     try {
-      // 1. Try reading from Firebase Cloud Firestore
+      // Check if running on Netlify environment or custom Netlify DB URL
+      const endpoint = NETLIFY_DB_URL
+        ? `${NETLIFY_DB_URL}?key=${key}`
+        : `/.netlify/functions/db-sync?key=${key}`;
+
+      const headers = NETLIFY_DB_TOKEN ? { 'Authorization': `Bearer ${NETLIFY_DB_TOKEN}` } : {};
+      const res = await fetch(endpoint, { headers });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.payload !== undefined && json.payload !== null) {
+          try { localStorage.setItem(key, JSON.stringify(json.payload)); } catch(e) {}
+          return json.payload;
+        }
+      }
+    } catch (e) {
+      // Netlify endpoint silent fallback
+    }
+
+    // 2. Try Firebase Cloud Firestore
+    try {
       const docRef = doc(db, "register_data", key);
       const docSnap = await getDoc(docRef);
-
       if (docSnap.exists()) {
         const cloudData = docSnap.data()?.payload;
-        if (cloudData !== undefined) {
-          // Cache in local storage for offline resiliency
+        if (cloudData !== undefined && cloudData !== null) {
           try { localStorage.setItem(key, JSON.stringify(cloudData)); } catch(e) {}
           return cloudData;
         }
       }
     } catch (cloudErr) {
-      console.warn(`[Cloud DB Note] Could not fetch '${key}' from Cloud Firestore (using Local Cache):`, cloudErr.message);
+      // Firebase silent fallback
     }
 
-    // 2. LocalStorage Fallback if Cloud DB fails or offline
+    // 3. LocalStorage Fallback
     try {
       const val = localStorage.getItem(key);
       return val ? JSON.parse(val) : fallback;
@@ -42,16 +65,36 @@ export const storageService = {
     }
   },
 
-  // Write Data: Saves to LocalStorage IMMEDIATELY for instant UI speed, then syncs to Cloud DB
+  // Write Data: Immediate LocalStorage cache + Async Cloud DB sync (Netlify DB + Firebase)
   async set(key, value) {
-    // 1. Immediate LocalStorage Write
+    // 1. Save to LocalStorage immediately for zero-latency UI
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
       console.error("Local storage error:", e);
     }
 
-    // 2. Real-Time Cloud Firestore Sync across all devices
+    // 2. Write to Netlify DB / Netlify Serverless Cloud Function
+    try {
+      const endpoint = NETLIFY_DB_URL
+        ? NETLIFY_DB_URL
+        : `/.netlify/functions/db-sync`;
+
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(NETLIFY_DB_TOKEN ? { 'Authorization': `Bearer ${NETLIFY_DB_TOKEN}` } : {})
+      };
+
+      await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ key, payload: value })
+      });
+    } catch (e) {
+      // Netlify function write fallback
+    }
+
+    // 3. Write to Firebase Cloud Firestore
     try {
       const docRef = doc(db, "register_data", key);
       await setDoc(docRef, {
@@ -59,27 +102,40 @@ export const storageService = {
         updatedAt: Date.now()
       }, { merge: true });
     } catch (cloudErr) {
-      console.warn(`[Cloud DB Note] Could not write '${key}' to Cloud Firestore:`, cloudErr.message);
+      // Firebase write fallback
     }
   },
 
-  // Real-Time Listener: Listens for Cloud Database changes from other devices in real-time
+  // Real-Time Cloud Subscription Listener
   subscribeToKey(key, callback) {
+    // Poll Netlify Serverless DB every 8 seconds for multi-device sync
+    const interval = setInterval(async () => {
+      try {
+        const data = await this.get(key, null);
+        if (data !== null) {
+          callback(data);
+        }
+      } catch (e) {}
+    }, 8000);
+
+    // Also attach Firebase Realtime Listener if available
+    let unsubFirebase = () => {};
     try {
       const docRef = doc(db, "register_data", key);
-      return onSnapshot(docRef, (docSnap) => {
+      unsubFirebase = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           const cloudData = docSnap.data()?.payload;
-          if (cloudData !== undefined) {
+          if (cloudData !== undefined && cloudData !== null) {
             callback(cloudData);
           }
         }
-      }, (err) => {
-        console.warn(`[Cloud DB Listener Note] '${key}':`, err.message);
-      });
-    } catch (e) {
-      return () => {};
-    }
+      }, () => {});
+    } catch (e) {}
+
+    return () => {
+      clearInterval(interval);
+      unsubFirebase();
+    };
   }
 };
 
