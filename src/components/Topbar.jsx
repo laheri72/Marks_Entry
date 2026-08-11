@@ -13,18 +13,18 @@ export const Topbar = ({ currentView, setView }) => {
         <div className="brand-mark">R</div>
         <div className="brand-text">
           <div className="name">The Register</div>
-          <div className="sub">Formative Assessment</div>
+          <div className="sub">Al Jamea Tus Saifiyah · Marol Campus</div>
         </div>
       </div>
 
       <div className="topbar-right">
         <div className="user-info">
           <div>
-            <span className="user-name">{currentUser.name}</span>
+            <span className="user-name">{currentUser.name || currentUser.email.split('@')[0]}</span>
             {currentUser.email && <div className="user-email">{currentUser.email}</div>}
           </div>
           <span className={`role-badge ${isAdmin ? 'admin' : ''}`}>
-            {isAdmin ? 'Admin' : 'Teacher'}
+            {isAdmin ? 'Administrator' : 'Faculty'}
           </span>
         </div>
 

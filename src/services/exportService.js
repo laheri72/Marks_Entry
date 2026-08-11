@@ -1,122 +1,133 @@
-import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export const exportService = {
-  // Export Class Marks Roster to Excel / CSV with Guarded Values
-  exportToCSV(std, subject, students, marksMap, maxMarks) {
+  // Export Marks Roster to CSV
+  exportToCSV(std, subject, students, savedMarks, maxMarks) {
+    const headers = ['Roll No', 'Student Name', 'Marks Obtained', 'Max Marks', 'Status'];
     const rows = students.map((st) => {
-      const entry = marksMap[st.id];
-      const val = entry ? entry.value : '';
-      const numVal = parseFloat(val);
-      const isNumeric = !isNaN(numVal) && val !== 'A' && val !== 'E';
-      const clampedVal = isNumeric ? Math.min(Math.max(0, numVal), maxMarks) : val;
-      const pct = isNumeric && maxMarks ? ((clampedVal / maxMarks) * 100).toFixed(1) + '%' : 'N/A';
+      const entry = savedMarks[st.id];
+      const rawVal = entry ? entry.value : '';
+      let status = 'Pending';
+      let scoreVal = rawVal;
 
-      return {
-        'Roll Number': st.roll ?? '',
-        'Student Name': st.name,
-        'Class': std,
-        'Subject': subject,
-        'Marks Obtained': val !== '' ? clampedVal : 'Not Entered',
-        'Max Marks': maxMarks,
-        'Percentage': pct,
-        'Entered By': entry ? entry.enteredByName : '—',
-        'Last Updated': entry ? new Date(entry.at).toLocaleString() : '—'
-      };
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks Register');
-    
-    // Trigger download
-    const cleanFilename = `Class_${std.replace(/[^a-zA-Z0-9]/g, '_')}_${subject}_Marks.xlsx`;
-    XLSX.writeFile(workbook, cleanFilename);
-  },
-
-  // Export Class Report Card to Vector PDF with School Header Branding
-  exportToPDF(std, subject, students, marksMap, maxMarks) {
-    const doc = new jsPDF();
-    const nowStr = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-
-    // Document Header
-    doc.setFillColor(30, 42, 56); // Navy Ink
-    doc.rect(0, 0, 210, 28, 'F');
-
-    doc.setTextColor(238, 243, 232); // Paper
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('THE REGISTER — FORMATIVE ASSESSMENT REPORT', 14, 15);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Generated on ${nowStr} | Official Academic Record`, 14, 22);
-
-    // Meta Block
-    doc.setTextColor(30, 42, 56);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Class: Standard ${std}`, 14, 38);
-    doc.text(`Subject: ${subject}`, 100, 38);
-    doc.text(`Max Marks: ${maxMarks}`, 160, 38);
-
-    // Guarded Statistics Calculation
-    let filledCount = 0;
-    let totalScore = 0;
-    let highestMark = 0;
-
-    students.forEach((st) => {
-      const e = marksMap[st.id];
-      if (e && e.value !== '' && e.value !== 'A' && e.value !== 'E') {
-        const v = parseFloat(e.value);
-        if (!isNaN(v)) {
-          const clampedVal = Math.min(Math.max(0, v), maxMarks);
-          filledCount++;
-          totalScore += clampedVal;
-          if (clampedVal > highestMark) highestMark = clampedVal;
-        }
-      }
-    });
-
-    const avgScore = filledCount > 0 ? (totalScore / filledCount).toFixed(1) : 'N/A';
-
-    // Summary Box
-    doc.setFillColor(244, 248, 240);
-    doc.setDrawColor(198, 211, 188);
-    doc.roundedRect(14, 43, 182, 14, 3, 3, 'FD');
-
-    doc.setFontSize(9.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(85, 99, 111);
-    doc.text(`Total Students: ${students.length}   |   Marks Entered: ${filledCount} / ${students.length}   |   Class Avg: ${avgScore} / ${maxMarks}   |   Highest: ${highestMark} / ${maxMarks}`, 18, 52);
-
-    // Table Columns & Rows
-    const tableHeaders = [['Roll #', 'Student Name', 'Marks Obtained', 'Percentage', 'Status', 'Entered By']];
-    const tableData = students.map((st) => {
-      const e = marksMap[st.id];
-      const val = e ? e.value : '—';
-      const numVal = parseFloat(val);
-      const isNumeric = !isNaN(numVal) && val !== 'A' && val !== 'E';
-      const clampedVal = isNumeric ? Math.min(Math.max(0, numVal), maxMarks) : val;
-      const pct = isNumeric && maxMarks ? ((clampedVal / maxMarks) * 100).toFixed(1) + '%' : '—';
-      const status = e && e.value !== '' ? 'Submitted' : 'Pending';
+      if (rawVal === 'A') status = 'Absent';
+      else if (rawVal === 'E') status = 'Exempt';
+      else if (rawVal !== '') status = 'Present';
 
       return [
         st.roll ?? '—',
-        st.name,
-        val !== '—' ? `${clampedVal} / ${maxMarks}` : '—',
-        pct,
-        status,
-        e ? e.enteredByName : '—'
+        `"${st.name.replace(/"/g, '""')}"`,
+        scoreVal !== '' ? scoreVal : '—',
+        maxMarks,
+        status
       ];
     });
 
-    // Auto Table Generation
+    const csvContent = 'data:text/csv;charset=utf-8,' + [
+      `"AL JAMEA TUS SAIFIYAH — MAROL CAMPUS"`,
+      `"FORMATIVE ASSESSMENT MARKS ROSTER"`,
+      `"Class: ${std} | Course: ${subject} | Max Marks: ${maxMarks}"`,
+      '',
+      headers.join(','),
+      ...rows.map(e => e.join(','))
+    ].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Al_Jamea_Class_${std}_${subject}_Marks.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  // Export Professional Vector PDF Academic Report
+  exportToPDF(std, subject, students, savedMarks, maxMarks) {
+    const doc = new jsPDF();
+    const sorted = [...students].sort((a, b) => (a.roll || 0) - (b.roll || 0));
+
+    let filledCount = 0;
+    let totalScore = 0;
+    let highestMark = 0;
+    let lowestMark = maxMarks;
+
+    const tableRows = sorted.map((st, idx) => {
+      const entry = savedMarks[st.id];
+      const rawVal = entry ? entry.value : '';
+      let displayVal = '—';
+      let status = 'Pending';
+
+      if (rawVal === 'A') {
+        displayVal = 'A';
+        status = 'Absent';
+      } else if (rawVal === 'E') {
+        displayVal = 'E';
+        status = 'Exempt';
+      } else if (rawVal !== '') {
+        const num = parseFloat(rawVal);
+        if (!isNaN(num)) {
+          const clamped = Math.min(Math.max(0, num), maxMarks);
+          displayVal = String(clamped);
+          filledCount++;
+          totalScore += clamped;
+          if (clamped > highestMark) highestMark = clamped;
+          if (clamped < lowestMark) lowestMark = clamped;
+          status = 'Graded';
+        }
+      }
+
+      return [
+        st.roll ?? (idx + 1),
+        st.name,
+        displayVal,
+        String(maxMarks),
+        status
+      ];
+    });
+
+    const avgScore = filledCount > 0 ? (totalScore / filledCount).toFixed(1) : '—';
+    const completionPct = Math.round((filledCount / sorted.length) * 100);
+
+    // 1. INSTITUTIONAL HEADER
+    doc.setFillColor(30, 42, 56); // Deep Navy Ink
+    doc.rect(0, 0, 210, 36, 'F');
+
+    doc.setTextColor(230, 206, 140); // Gold Accent
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('AL JAMEA TUS SAIFIYAH — MAROL CAMPUS', 14, 16);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text('FORMATIVE ASSESSMENT ACADEMIC REPORT', 14, 26);
+
+    // 2. METADATA SUMMARY BAR
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Class: Class ${std}`, 14, 46);
+    doc.text(`Course: ${subject}`, 70, 46);
+    doc.text(`Max Marks: ${maxMarks}`, 135, 46);
+    doc.text(`Date Generated: ${new Date().toLocaleDateString()}`, 14, 52);
+
+    // 3. STATISTICAL ANALYTICS BOXES
+    doc.setFillColor(244, 246, 240);
+    doc.roundedRect(14, 58, 182, 18, 2, 2, 'F');
+
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Enrolled: ${sorted.length} Students`, 20, 69);
+    doc.text(`Assessed: ${filledCount}/${sorted.length} (${completionPct}%)`, 70, 69);
+    doc.text(`Class Average: ${avgScore}/${maxMarks}`, 125, 69);
+    doc.text(`Highest: ${highestMark}`, 170, 69);
+
+    // 4. AUTOTABLE STUDENT ROSTER
     autoTable(doc, {
-      startY: 62,
-      head: tableHeaders,
-      body: tableData,
+      startY: 82,
+      head: [['Roll #', 'Student Name', 'Score', 'Max', 'Assessment Status']],
+      body: tableRows,
       theme: 'grid',
       headStyles: {
         fillColor: [30, 42, 56],
@@ -124,37 +135,32 @@ export const exportService = {
         fontStyle: 'bold',
         fontSize: 10
       },
-      bodyStyles: {
-        fontSize: 9.5,
-        textColor: [30, 42, 56]
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 246]
-      },
       columnStyles: {
-        0: { cellWidth: 20, fontStyle: 'bold' },
-        1: { cellWidth: 70 },
-        2: { cellWidth: 30, halign: 'right' },
-        3: { cellWidth: 25, halign: 'right' },
-        4: { cellWidth: 22, halign: 'center' },
-        5: { cellWidth: 33 }
+        0: { cellWidth: 20, halign: 'center' },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 27, halign: 'center' }
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3
       }
     });
 
-    // Footer Signatures
-    const finalY = doc.lastAutoTable.finalY + 25;
-    if (finalY < 270) {
+    // 5. OFFICIAL INSTITUTIONAL SIGNATURE BLOCK AT FOOTER
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 25 : 220;
+    if (finalY < 260) {
       doc.setDrawColor(180, 180, 180);
-      doc.line(14, finalY, 64, finalY);
-      doc.line(146, finalY, 196, finalY);
+      doc.line(20, finalY, 80, finalY);
+      doc.line(130, finalY, 190, finalY);
 
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Subject Teacher Signature', 14, finalY + 5);
-      doc.text('Academic Coordinator / Admin', 146, finalY + 5);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Faculty Examiner Signature', 26, finalY + 6);
+      doc.text('University Administrator Signature', 132, finalY + 6);
     }
 
-    // Trigger PDF output preview in new window or download
-    doc.save(`Class_${std.replace(/[^a-zA-Z0-9]/g, '_')}_${subject}_Report.pdf`);
+    doc.save(`Al_Jamea_Class_${std}_${subject}_Report.pdf`);
   }
 };
