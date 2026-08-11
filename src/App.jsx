@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Topbar } from './components/Topbar';
 import { LoginScreen } from './components/LoginScreen';
@@ -7,6 +7,44 @@ import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS } from './seedData';
 import { storageService, STORAGE_KEYS } from './services/storageService';
+
+// Error Boundary Fallback to prevent white blank screen in production
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Uncaught application error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#EEF3E8', padding: '24px' }}>
+          <div style={{ background: '#fff', border: '1px solid #C6D3BC', borderRadius: '12px', padding: '32px', maxWidth: '440px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ fontFamily: 'Fraunces', color: '#B4382C', margin: '0 0 8px' }}>Application Notice</h2>
+            <p style={{ fontSize: '13.5px', color: '#55636F', margin: '0 0 16px' }}>
+              The application encountered a temporary error.
+            </p>
+            <button
+              onClick={() => { localStorage.clear(); window.location.reload(); }}
+              style={{ background: '#1E2A38', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Reset Cache &amp; Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const MainApp = () => {
   const { currentUser, loading } = useAuth();
@@ -26,23 +64,27 @@ const MainApp = () => {
   // Initialize Data from Storage or Seed Fallbacks
   useEffect(() => {
     async function loadAppData() {
-      const storedStds = await storageService.get(STORAGE_KEYS.STDS, null);
-      if (storedStds) setStds(storedStds);
-      else await storageService.set(STORAGE_KEYS.STDS, SEED_STDS);
+      try {
+        const storedStds = await storageService.get(STORAGE_KEYS.STDS, null);
+        if (storedStds) setStds(storedStds);
+        else await storageService.set(STORAGE_KEYS.STDS, SEED_STDS);
 
-      const storedSubjects = await storageService.get(STORAGE_KEYS.SUBJECTS, null);
-      if (storedSubjects) setSubjectsByStd(storedSubjects);
-      else await storageService.set(STORAGE_KEYS.SUBJECTS, SEED_SUBJECTS);
+        const storedSubjects = await storageService.get(STORAGE_KEYS.SUBJECTS, null);
+        if (storedSubjects) setSubjectsByStd(storedSubjects);
+        else await storageService.set(STORAGE_KEYS.SUBJECTS, SEED_SUBJECTS);
 
-      const storedStudents = await storageService.get(STORAGE_KEYS.STUDENTS, null);
-      if (storedStudents) setStudentsByStd(storedStudents);
-      else await storageService.set(STORAGE_KEYS.STUDENTS, SEED_STUDENTS);
+        const storedStudents = await storageService.get(STORAGE_KEYS.STUDENTS, null);
+        if (storedStudents) setStudentsByStd(storedStudents);
+        else await storageService.set(STORAGE_KEYS.STUDENTS, SEED_STUDENTS);
 
-      const storedMax = await storageService.get(STORAGE_KEYS.MAX_MARKS, {});
-      setMaxMarks(storedMax);
+        const storedMax = await storageService.get(STORAGE_KEYS.MAX_MARKS, {});
+        setMaxMarks(storedMax);
 
-      const storedMarks = await storageService.get(STORAGE_KEYS.MARKS, {});
-      setMarksMap(storedMarks);
+        const storedMarks = await storageService.get(STORAGE_KEYS.MARKS, {});
+        setMarksMap(storedMarks);
+      } catch (e) {
+        console.warn("Error loading app data:", e);
+      }
     }
     loadAppData();
   }, []);
@@ -146,8 +188,10 @@ const MainApp = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
