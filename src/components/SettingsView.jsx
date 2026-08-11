@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, UserPlus, Shield, Check, Users } from 'lucide-react';
+import { SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS } from '../seedData';
+import { Plus, Trash2, UserPlus, Shield, Check, Database, RefreshCw } from 'lucide-react';
 
 export const SettingsView = ({
   stds,
@@ -15,6 +16,7 @@ export const SettingsView = ({
 }) => {
   const { currentUser, isAdmin, teachers, updateTeachersList } = useAuth();
   const [selectedSettingStd, setSelectedSettingStd] = useState(stds[0] || null);
+  const [seedStatus, setSeedStatus] = useState('');
 
   // New Class Input State
   const [newStdName, setNewStdName] = useState('');
@@ -29,6 +31,15 @@ export const SettingsView = ({
 
   // Bulk Student Input State
   const [bulkText, setBulkText] = useState('');
+
+  // Force Sync Seed Data to Cloud Database
+  const handleForceSeedCloud = async () => {
+    if (!window.confirm("Seed/Overwrite Cloud Database with all 27 MSB Classes & 550+ Bohra Students?")) return;
+    setSeedStatus('Syncing seed data to Firebase Cloud DB...');
+    await onSaveAll(SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS, maxMarks);
+    setSeedStatus('✓ Cloud Database seeded successfully with 27 Classes and 550+ Students!');
+    setTimeout(() => setSeedStatus(''), 6000);
+  };
 
   // Add Class
   const handleAddClass = () => {
@@ -161,11 +172,28 @@ export const SettingsView = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* PANEL 1: CLASSES MASTER */}
+      {/* PANEL 1: CLASSES MASTER & CLOUD SEEDING */}
       <div className="panel">
-        <h3>Master Classes List</h3>
-        <div className="hint">Classes currently configured in the school system.</div>
-        <div className="chip-row">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3>Master Classes List</h3>
+            <div className="hint" style={{ margin: 0 }}>Classes currently configured in the school system.</div>
+          </div>
+
+          {isAdmin && (
+            <button className="btn btn-ghost btn-sm" onClick={handleForceSeedCloud} title="Push Seed Data to Firebase">
+              <Database size={14} color="var(--gold)" /> Sync All Seed Rosters to Cloud DB
+            </button>
+          )}
+        </div>
+
+        {seedStatus && (
+          <div style={{ margin: '12px 0 0', padding: '8px 12px', background: 'var(--green-soft)', color: 'var(--green-ok)', borderRadius: '6px', fontSize: '12.5px', fontWeight: 600 }}>
+            {seedStatus}
+          </div>
+        )}
+
+        <div className="chip-row" style={{ marginTop: '14px' }}>
           {stds.map(s => (
             <span key={s} className="chip">
               Class {s}
