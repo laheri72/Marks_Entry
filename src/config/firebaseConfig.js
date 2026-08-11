@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Firebase Configuration reading dynamically from Environment Variables
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -31,7 +31,7 @@ export const signInWithGoogleCloud = async () => {
       role: 'teacher'
     };
   } catch (error) {
-    console.warn("Firebase Google Auth popup closed or unconfigured. Prompting institutional email:", error.message);
+    console.error("Google Auth Popup Error:", error.code, error.message);
     throw error;
   }
 };

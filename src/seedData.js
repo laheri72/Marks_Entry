@@ -41,36 +41,14 @@ export const SEED_SUBJECTS = {
   "7-A (Girls)": [...HIGHER_SUBJECTS]
 };
 
+// Initial Authorized Teachers Roster (Primary Admin: idrislaheri72@gmail.com)
 export const DEFAULT_DEMO_TEACHERS = [
   {
-    id: 'admin',
-    email: 'admin@msb.edu',
-    name: 'School Admin',
+    id: 'admin_idris',
+    email: 'idrislaheri72@gmail.com',
+    name: 'Idris Laheri',
     role: 'admin',
-    assignments: [] // Admin sees all
-  },
-  {
-    id: 'teacher_priya',
-    email: 'priya.sharma@msb.edu',
-    name: 'Priya Sharma',
-    role: 'teacher',
-    assignments: [
-      '5-A (Boys)|Economics',
-      '5-A (Girls)|Economics',
-      '7-A (Girls)|Economics',
-      '7-A (Boys)|Business Studies'
-    ]
-  },
-  {
-    id: 'teacher_mufaddal',
-    email: 'mufaddal.kapadia@msb.edu',
-    name: 'Mufaddal Kapadia',
-    role: 'teacher',
-    assignments: [
-      '1-A (Boys)|Maths',
-      '1-A (Girls)|Maths',
-      '2-A (Boys)|Maths'
-    ]
+    assignments: []
   }
 ];
 
@@ -134,13 +112,13 @@ export const SEED_STUDENTS = {
     { id: "st_27385", name: "Fatema bai Mohammed bhai Qutbi", roll: 27385 },
     { id: "st_27394", name: "Ummehani bai Shaikh Shabbir bhai Dohadwala", roll: 27394 },
     { id: "st_27400", name: "Mariyah bai Shaikh Abbas bhai Dhandhukawala", roll: 27400 },
-    { id: "st_27418", "name": "Hawra bai Husain bhai Mundwada Wala", roll: 27418 }
+    { id: "st_27418", name: "Hawra bai Husain bhai Mundwada Wala", roll: 27418 }
   ],
   "7-A (Girls)": [
     { id: "st_27042", name: "Zahabiyah bai Murtaza bhai Begwala", roll: 27042 },
     { id: "st_27051", name: "Amatullah bai Murtaza bhai Kapasi", roll: 27051 },
     { id: "st_27055", name: "Insiyah bai Mulla Shabbir bhai Semari Wala", roll: 27055 },
-    { id: "st_27056", "name": "Zainab bai Mulla Murtaza bhai Rampurawala", roll: 27056 }
+    { id: "st_27056", name: "Zainab bai Mulla Murtaza bhai Rampurawala", roll: 27056 }
   ],
   "7-A (Boys)": [
     { id: "st_26698", name: "Mulla Hatim bhai Huzaifa bhai Vohra", roll: 26698 },

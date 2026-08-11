@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, UserCheck, ArrowRight, Lock } from 'lucide-react';
+import { Shield, ArrowRight, Lock, ShieldAlert, LogIn } from 'lucide-react';
 
 export const LoginScreen = () => {
-  const { loginWithGoogleOAuth, processGoogleUser, loginAsDemo, teachers } = useAuth();
+  const { loginWithGoogleOAuth, processGoogleUser, authError, unauthorizedEmail } = useAuth();
   const [customEmail, setCustomEmail] = useState('');
 
   const handleCustomGoogleSignIn = (e) => {
@@ -22,6 +22,26 @@ export const LoginScreen = () => {
         <h1 className="login-title">The Register</h1>
         <div className="login-sub">Formative Assessment · Institutional Google Portal</div>
 
+        {/* UNAUTHORIZED ACCOUNT NOTICE */}
+        {unauthorizedEmail && (
+          <div style={{ background: '#FFF4F2', border: '1px solid #F2B8B2', borderRadius: '8px', padding: '14px', marginBottom: '20px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#B4382C', fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>
+              <ShieldAlert size={18} /> Access Pending Approval
+            </div>
+            <p style={{ fontSize: '12.5px', color: '#55636F', margin: 0, lineHeight: 1.4 }}>
+              Your Google account <b>{unauthorizedEmail}</b> is not on the authorized teacher roster yet. Please contact School Admin <b>Idris Laheri</b> (idrislaheri72@gmail.com) to add your email in Settings.
+            </p>
+          </div>
+        )}
+
+        {/* AUTH ERROR NOTICE */}
+        {authError && (
+          <div style={{ background: '#FFF8E7', border: '1px solid #E9DCB8', borderRadius: '8px', padding: '12px', marginBottom: '20px', textAlign: 'left', fontSize: '12.5px', color: '#6b551f' }}>
+            <b>Sign-In Notice:</b> {authError}
+          </div>
+        )}
+
+        {/* GOOGLE SIGN IN BUTTON */}
         <button
           className="google-btn"
           onClick={loginWithGoogleOAuth}
@@ -32,14 +52,17 @@ export const LoginScreen = () => {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
-          Sign in with Google OAuth
+          Sign in with Google Account
         </button>
 
-        <form onSubmit={handleCustomGoogleSignIn} style={{ marginTop: '16px' }}>
+        <form onSubmit={handleCustomGoogleSignIn} style={{ marginTop: '20px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--ink-faint)', marginBottom: '8px', fontWeight: 500 }}>
+            Or enter authorized Google email directly:
+          </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <input
               type="email"
-              placeholder="e.g. teacher.maths@msb.edu"
+              placeholder="e.g. idrislaheri72@gmail.com"
               value={customEmail}
               onChange={(e) => setCustomEmail(e.target.value)}
               style={{
@@ -57,31 +80,10 @@ export const LoginScreen = () => {
           </div>
         </form>
 
-        <div className="demo-divider">
-          <span>Or Test Demo Accounts</span>
-        </div>
-
-        <div className="demo-chips">
-          {teachers.map((t) => (
-            <button
-              key={t.id}
-              className="demo-chip-btn"
-              onClick={() => loginAsDemo(t.id)}
-            >
-              <div>
-                <strong style={{ color: 'var(--ink)' }}>{t.name}</strong>
-                <div style={{ fontSize: '11px', color: 'var(--ink-faint)' }}>
-                  {t.role === 'admin' ? '👑 Full Admin Access' : `📚 ${t.assignments?.length || 0} Assigned Subjects`}
-                </div>
-              </div>
-              <UserCheck size={16} color="var(--gold)" />
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginTop: '24px', fontSize: '12px', color: 'var(--ink-faint)', lineHeight: 1.5 }}>
+        <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: '1px solid var(--rule)', fontSize: '12px', color: 'var(--ink-faint)', lineHeight: 1.5, textAlign: 'center' }}>
           <Lock size={12} style={{ display: 'inline', marginRight: '4px' }} />
-          Role-Based Access Control Enabled. Teachers see only their assigned classes &amp; subjects.
+          Primary School Admin: <b>idrislaheri72@gmail.com</b><br />
+          Teachers must be authorized by Admin in Settings to access.
         </div>
       </div>
     </div>

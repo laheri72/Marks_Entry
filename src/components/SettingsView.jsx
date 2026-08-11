@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS } from '../seedData';
-import { Plus, Trash2, UserPlus, Shield, Check, Database, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Shield, Check, Database, Mail, UserCheck, Key } from 'lucide-react';
 
 export const SettingsView = ({
   stds,
@@ -14,9 +14,13 @@ export const SettingsView = ({
   setMaxMarks,
   onSaveAll
 }) => {
-  const { currentUser, isAdmin, teachers, updateTeachersList } = useAuth();
+  const { currentUser, isAdmin, teachers, addTeacherEmail, removeTeacherEmail, updateTeachersList } = useAuth();
   const [selectedSettingStd, setSelectedSettingStd] = useState(stds[0] || null);
   const [seedStatus, setSeedStatus] = useState('');
+
+  // New Teacher Email State
+  const [newTeacherEmailInput, setNewTeacherEmailInput] = useState('');
+  const [newTeacherNameInput, setNewTeacherNameInput] = useState('');
 
   // New Class Input State
   const [newStdName, setNewStdName] = useState('');
@@ -31,6 +35,16 @@ export const SettingsView = ({
 
   // Bulk Student Input State
   const [bulkText, setBulkText] = useState('');
+
+  // Add Authorized Teacher Email
+  const handleAuthorizeTeacher = async () => {
+    if (!newTeacherEmailInput.trim()) return;
+    await addTeacherEmail(newTeacherEmailInput.trim(), newTeacherNameInput.trim());
+    setNewTeacherEmailInput('');
+    setNewTeacherNameInput('');
+    setSeedStatus('✓ Teacher email authorized successfully.');
+    setTimeout(() => setSeedStatus(''), 4000);
+  };
 
   // Force Sync Seed Data to Cloud Database
   const handleForceSeedCloud = async () => {
@@ -172,7 +186,135 @@ export const SettingsView = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* PANEL 1: CLASSES MASTER & CLOUD SEEDING */}
+
+      {/* ADMIN EXCLUSIVE: TEACHER MANAGEMENT & GOOGLE AUTH PROVISIONING */}
+      {isAdmin && (
+        <div className="panel" style={{ borderLeft: '4px solid var(--blue-admin)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <Key size={20} color="var(--blue-admin)" />
+            <h3 style={{ margin: 0 }}>Teacher Google Account Authorization &amp; Scoped Permissions</h3>
+          </div>
+          <div className="hint">
+            Authorize teacher Google emails. When a teacher signs in with Google, the portal verifies their email against this list and grants access <b>ONLY</b> to their assigned classes.
+          </div>
+
+          {/* ADD TEACHER EMAIL INPUT */}
+          <div style={{ background: 'var(--paper-deep)', padding: '14px', borderRadius: '8px', border: '1px solid var(--rule)', marginBottom: '18px' }}>
+            <h4 style={{ fontSize: '13.5px', margin: '0 0 10px', color: 'var(--ink)' }}>Authorize New Teacher Google Email</h4>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                style={{ flex: 1, minWidth: '220px', padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px' }}
+                type="email"
+                placeholder="Google Email (e.g. teacher.english@msb.edu)"
+                value={newTeacherEmailInput}
+                onChange={e => setNewTeacherEmailInput(e.target.value)}
+              />
+              <input
+                style={{ flex: 1, minWidth: '160px', padding: '9px 12px', border: '1px solid var(--rule)', borderRadius: '6px', fontSize: '13px' }}
+                type="text"
+                placeholder="Teacher Name (Optional)"
+                value={newTeacherNameInput}
+                onChange={e => setNewTeacherNameInput(e.target.value)}
+              />
+              <button className="btn btn-primary btn-sm" onClick={handleAuthorizeTeacher}>
+                <UserPlus size={14} /> Authorize Teacher Email
+              </button>
+            </div>
+          </div>
+
+          {/* AUTHORIZED TEACHERS LIST & PERMISSION MATRIX */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {teachers.map((t) => {
+              const teacherAssignments = t.assignments || [];
+              const isPrimaryAdmin = t.email.toLowerCase() === 'idrislaheri72@gmail.com';
+
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    background: '#fff',
+                    border: isPrimaryAdmin ? '2px solid var(--gold)' : '1px solid var(--rule)',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <strong style={{ fontSize: '15px', color: 'var(--ink)' }}>{t.name}</strong>
+                      <span style={{ fontSize: '12.5px', color: 'var(--ink-faint)', marginLeft: '10px', fontFamily: 'IBM Plex Mono' }}>
+                        <Mail size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                        {t.email}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className={`role-badge ${t.role === 'admin' ? 'admin' : ''}`}>
+                        {t.role === 'admin' ? '👑 Primary Admin' : `📚 ${teacherAssignments.length} Assigned Subjects`}
+                      </span>
+
+                      {!isPrimaryAdmin && (
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--red)', borderColor: 'var(--red-soft)' }}
+                          onClick={() => removeTeacherEmail(t.id)}
+                          title="Revoke Teacher Access"
+                        >
+                          <Trash2 size={13} /> Revoke
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {!isPrimaryAdmin && (
+                    <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--rule)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-soft)', marginBottom: '8px' }}>
+                        Assigned Class &amp; Subject Pairs for {t.name}:
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                        {stds.flatMap(s => {
+                          const subs = subjectsByStd[s] || [];
+                          return subs.map(sub => {
+                            const key = `${s}|${sub}`;
+                            const checked = teacherAssignments.includes(key);
+
+                            return (
+                              <label
+                                key={key}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: '12px',
+                                  background: checked ? 'var(--paper-deep)' : 'transparent',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  border: checked ? '1px solid var(--gold)' : '1px solid transparent',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleTeacherAssignment(t.id, key)}
+                                />
+                                <span>Class <b>{s}</b> · {sub}</span>
+                              </label>
+                            );
+                          });
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* PANEL 2: MASTER CLASSES LIST & CLOUD SEEDING */}
       <div className="panel">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <div>
@@ -215,7 +357,7 @@ export const SettingsView = ({
         )}
       </div>
 
-      {/* PANEL 2: SUBJECTS & STUDENTS PER CLASS */}
+      {/* PANEL 3: SUBJECTS & STUDENTS PER CLASS */}
       <div className="panel">
         <h3>Subjects &amp; Student Rosters</h3>
         <div className="hint">Configure subjects, default max marks, and student rosters per class.</div>
@@ -337,89 +479,6 @@ export const SettingsView = ({
           </>
         )}
       </div>
-
-      {/* PANEL 3: TEACHER SUBJECT ASSIGNMENT MATRIX (ADMIN ONLY) */}
-      {isAdmin && (
-        <div className="panel">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <Shield size={20} color="var(--blue-admin)" />
-            <h3 style={{ margin: 0 }}>Teacher Scoped Permission Assignment Matrix</h3>
-          </div>
-          <div className="hint">
-            Assign exact Class + Subject pairs to each teacher. Teachers will see ONLY their assigned classes when they sign in with Google.
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {teachers.map((t) => {
-              const teacherAssignments = t.assignments || [];
-
-              return (
-                <div
-                  key={t.id}
-                  style={{
-                    background: 'var(--paper-deep)',
-                    border: '1px solid var(--rule)',
-                    borderRadius: '8px',
-                    padding: '16px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <strong style={{ fontSize: '15px', color: 'var(--ink)' }}>{t.name}</strong>
-                      <span style={{ fontSize: '12px', color: 'var(--ink-faint)', marginLeft: '8px', fontFamily: 'IBM Plex Mono' }}>{t.email || t.id}</span>
-                    </div>
-                    <span className={`role-badge ${t.role === 'admin' ? 'admin' : ''}`}>
-                      {t.role === 'admin' ? '👑 Admin (Access All)' : `📚 ${teacherAssignments.length} Assignments`}
-                    </span>
-                  </div>
-
-                  {t.role !== 'admin' && (
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-soft)', marginBottom: '8px' }}>
-                        Check assigned Class &amp; Subject pairs for {t.name}:
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-                        {stds.flatMap(s => {
-                          const subs = subjectsByStd[s] || [];
-                          return subs.map(sub => {
-                            const key = `${s}|${sub}`;
-                            const checked = teacherAssignments.includes(key);
-
-                            return (
-                              <label
-                                key={key}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  fontSize: '12.5px',
-                                  background: checked ? '#fff' : 'transparent',
-                                  padding: '4px 8px',
-                                  borderRadius: '4px',
-                                  border: checked ? '1px solid var(--gold)' : '1px solid transparent',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleTeacherAssignment(t.id, key)}
-                                />
-                                <span>Class <b>{s}</b> · {sub}</span>
-                              </label>
-                            );
-                          });
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
