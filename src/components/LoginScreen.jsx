@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Lock } from 'lucide-react';
+import { ShieldAlert, Lock, LogIn } from 'lucide-react';
 
 export const LoginScreen = () => {
   const { loginWithGoogleOAuth, authError, unauthorizedEmail } = useAuth();
@@ -16,10 +16,10 @@ export const LoginScreen = () => {
         {unauthorizedEmail && (
           <div style={{ background: '#FFF4F2', border: '1px solid #F2B8B2', borderRadius: '8px', padding: '14px', marginBottom: '20px', textAlign: 'left' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#B4382C', fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>
-              <ShieldAlert size={18} /> Authorization Pending
+              <ShieldAlert size={18} /> Access Pending Approval
             </div>
             <p style={{ fontSize: '12.5px', color: '#55636F', margin: 0, lineHeight: 1.4 }}>
-              Your Google account <b>{unauthorizedEmail}</b> is not on the authorized faculty roster yet. Please contact a <b>University Administrator</b> to grant access in Settings.
+              Your Google account <b>{unauthorizedEmail}</b> is not on the authorized teacher roster yet. Please contact Admin <b>Huzaifa Ajmer</b> (hmkajmerwala@gmail.com) to grant access in Settings.
             </p>
           </div>
         )}
@@ -43,13 +43,12 @@ export const LoginScreen = () => {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
-          Sign in with Institutional Google Account
+          Sign in with Google Account
         </button>
 
         <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: '1px solid var(--rule)', fontSize: '12px', color: 'var(--ink-faint)', lineHeight: 1.5, textAlign: 'center' }}>
           <Lock size={12} style={{ display: 'inline', marginRight: '4px' }} />
-          Institutional Single Sign-On · Authorized Academic Personnel Only<br />
-          Faculty accounts are provisioned by University Administration.
+          <b>Teachers must be authorized by Admin in Settings to access portal.</b><br />
         </div>
       </div>
     </div>
