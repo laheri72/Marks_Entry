@@ -19,7 +19,6 @@ const sanitizeDocId = (id) => String(id).replace(/[\/\s()]/g, '_');
 export const storageService = {
   // Read Data: Device Session keys read strictly from Local Device Storage
   async get(key, fallback = null) {
-    // 1. Device Local Sessions (MUST NOT sync to shared Cloud DB)
     if (key === 'tr_active_session') {
       try {
         const val = sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -29,7 +28,6 @@ export const storageService = {
       }
     }
 
-    // 2. School Master Shared Keys (Try Cloud Firestore first)
     try {
       const cleanKey = sanitizeDocId(key);
       const docRef = doc(db, "school_master", cleanKey);
@@ -46,7 +44,6 @@ export const storageService = {
       console.warn(`[Firestore Read Note] '${key}':`, cloudErr.message);
     }
 
-    // LocalStorage Fallback
     try {
       const val = localStorage.getItem(key);
       return val ? JSON.parse(val) : fallback;
@@ -70,7 +67,6 @@ export const storageService = {
       return;
     }
 
-    // Save Master Keys to LocalStorage cache + Cloud Firestore DB
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {}
@@ -78,10 +74,11 @@ export const storageService = {
     try {
       const cleanKey = sanitizeDocId(key);
       const docRef = doc(db, "school_master", cleanKey);
+      // Overwrite payload completely so deleted items are removed from Firestore
       await setDoc(docRef, {
         payload: value,
         updatedAt: Date.now()
-      }, { merge: true });
+      });
     } catch (cloudErr) {
       console.error(`[Firestore Master Write Error] '${key}':`, cloudErr.message);
     }
@@ -94,27 +91,36 @@ export const storageService = {
     // 1. Update Local Storage cache
     try {
       const allMarks = JSON.parse(localStorage.getItem(STORAGE_KEYS.MARKS) || '{}');
-      allMarks[`${std}|${subject}`] = marksMapKeyObj;
+      if (Object.keys(marksMapKeyObj).length > 0) {
+        allMarks[`${std}|${subject}`] = marksMapKeyObj;
+      } else {
+        delete allMarks[`${std}|${subject}`];
+      }
       localStorage.setItem(STORAGE_KEYS.MARKS, JSON.stringify(allMarks));
     } catch (e) {}
 
-    // 2. Write to Granular Cloud Firestore Document
+    // 2. Write to Granular Cloud Firestore Document (COMPLETE OVERWRITE TO REMOVE DELETED KEYS)
     try {
       const docRef = doc(db, "marks_rosters", docId);
       await setDoc(docRef, {
         std,
         subject,
-        marks: marksMapKeyObj,
+        marks: marksMapKeyObj, // Complete replacement removes deleted student keys!
         updatedBy: teacher?.name || teacher?.email || 'Teacher',
         updatedAt: Date.now()
-      }, { merge: true });
+      });
 
       // Also update master marks summary doc
       const masterMarksRef = doc(db, "school_master", STORAGE_KEYS.MARKS);
       const masterSnap = await getDoc(masterMarksRef);
       const masterData = masterSnap.exists() ? (masterSnap.data()?.payload || {}) : {};
-      masterData[`${std}|${subject}`] = marksMapKeyObj;
-      await setDoc(masterMarksRef, { payload: masterData, updatedAt: Date.now() }, { merge: true });
+      
+      if (Object.keys(marksMapKeyObj).length > 0) {
+        masterData[`${std}|${subject}`] = marksMapKeyObj;
+      } else {
+        delete masterData[`${std}|${subject}`];
+      }
+      await setDoc(masterMarksRef, { payload: masterData, updatedAt: Date.now() });
 
     } catch (cloudErr) {
       console.error(`[Firestore Roster Write Error] '${std} ${subject}':`, cloudErr.message);
@@ -131,10 +137,10 @@ export const storageService = {
       const docRef = doc(db, "marks_rosters", docId);
       return onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data()?.marks;
-          if (data !== undefined && data !== null) {
-            callback(data);
-          }
+          const data = docSnap.data()?.marks || {};
+          callback(data);
+        } else {
+          callback({});
         }
       }, (err) => {
         console.warn(`[Firestore Roster Listener Error] '${docId}':`, err.message);

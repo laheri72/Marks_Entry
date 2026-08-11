@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react';
 import { exportService } from '../services/exportService';
 import { storageService } from '../services/storageService';
 
@@ -53,14 +53,12 @@ export const LedgerRoster = ({
   useEffect(() => {
     if (!std || !subject) return;
 
-    const unsub = storageService.subscribeToRoster(std, subject, (cloudRosterMarks) => {
-      if (!cloudRosterMarks) return;
-      setLocalValues((prev) => {
-        const next = { ...prev };
-        Object.entries(cloudRosterMarks).forEach(([sid, entry]) => {
-          if (entry && entry.value !== undefined) {
-            next[sid] = entry.value;
-          }
+    const unsub = storageService.subscribeToRoster(std, subject, (cloudRosterMarks = {}) => {
+      setLocalValues(() => {
+        const next = {};
+        students.forEach(st => {
+          const entry = cloudRosterMarks[st.id];
+          next[st.id] = entry && entry.value !== undefined ? entry.value : '';
         });
         return next;
       });
@@ -68,7 +66,7 @@ export const LedgerRoster = ({
     });
 
     return () => unsub();
-  }, [std, subject]);
+  }, [std, subject, students]);
 
   // Input change handler
   const handleInputChange = (studentId, rawValue) => {
@@ -92,6 +90,16 @@ export const LedgerRoster = ({
     }
 
     setLocalValues((prev) => ({ ...prev, [studentId]: clean }));
+    setShowStamp(false);
+  };
+
+  // Clear / Delete mark entry for single student
+  const handleClearSingleMark = (studentId) => {
+    setLocalValues(prev => {
+      const next = { ...prev, [studentId]: '' };
+      return next;
+    });
+    setStatusMessage('Mark cleared. Press Enter or click Save marks to persist.');
     setShowStamp(false);
   };
 
@@ -175,7 +183,7 @@ export const LedgerRoster = ({
   };
 
   const handleQuickClearAll = () => {
-    if (!window.confirm('Clear all unsaved entries for this subject?')) return;
+    if (!window.confirm('Clear all unsaved entries for this course?')) return;
     const nextValues = {};
     students.forEach(st => { nextValues[st.id] = ''; });
     setLocalValues(nextValues);
@@ -192,7 +200,7 @@ export const LedgerRoster = ({
             No students in Class {std} yet
           </h3>
           <p style={{ fontSize: '13.5px', color: 'var(--ink-faint)', maxWidth: '380px', margin: '0 auto 18px' }}>
-            Paste the class list once in Settings and it's ready for every subject and assessment.
+            Paste the class roster once in Settings and it's ready for every course and assessment.
           </p>
           <button className="btn btn-gold btn-sm" onClick={onGotoSettings}>
             Add Students Roster
@@ -351,7 +359,7 @@ export const LedgerRoster = ({
         </div>
       </div>
 
-      {/* 4. PAGINATED ROSTER ROWS WITH INPUT VALIDATION */}
+      {/* 4. PAGINATED ROSTER ROWS WITH INPUT VALIDATION & DELETE ACTION */}
       <div className="ledger-rows">
         {paginatedStudents.length === 0 ? (
           <div style={{ padding: '30px', textAlign: 'center', color: 'var(--ink-faint)', fontSize: '13.5px' }}>
@@ -370,12 +378,22 @@ export const LedgerRoster = ({
                 <div className="roll">{st.roll ?? (startIndex + idx + 1)}</div>
                 <div className="sname">{st.name}</div>
 
-                {/* Touch Increments + Mark Input */}
+                {/* Touch Increments + Mark Input + Clear Action */}
                 <div className="marks-input-wrap">
                   <div className="touch-adjusters">
                     <button type="button" onClick={() => adjustMark(st.id, -1)} title="Decrease 1">-1</button>
                     <button type="button" onClick={() => adjustMark(st.id, 1)} title="Increase 1">+1</button>
                     <button type="button" onClick={() => handleInputChange(st.id, String(maxMarks))} title="Full Marks">Max</button>
+                    {isFilled && (
+                      <button
+                        type="button"
+                        onClick={() => handleClearSingleMark(st.id)}
+                        style={{ color: 'var(--red)', fontWeight: 600 }}
+                        title="Clear mark for this student"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
                   </div>
 
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
