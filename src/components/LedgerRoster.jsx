@@ -94,27 +94,42 @@ export const LedgerRoster = ({
   };
 
   // Clear / Delete mark entry for single student
-  const handleClearSingleMark = (studentId) => {
-    setLocalValues(prev => {
-      const next = { ...prev, [studentId]: '' };
-      return next;
-    });
-    setStatusMessage('Mark cleared. Press Enter or click Save marks to persist.');
+  const handleClearSingleMark = async (studentId) => {
+    const nextLocal = { ...localValues, [studentId]: '' };
+    setLocalValues(nextLocal);
+    setStatusMessage('Mark cleared. Saving to database...');
     setShowStamp(false);
+    
+    // Immediately persist deletion
+    const sanitized = {};
+    students.forEach(st => {
+      sanitized[st.id] = nextLocal[st.id] || '';
+    });
+    try {
+      await onSave(std, subject, sanitized);
+      setStatusMessage('Mark deleted and database updated.');
+      setShowStamp(true);
+    } catch (e) {
+      setStatusMessage('Failed to persist deletion.');
+    }
   };
 
-  // Sanitize all entries prior to persisting
+  // Sanitize all entries prior to persisting (Includes empty strings so deletions propagate!)
   const getSanitizedLocalValues = () => {
     const sanitized = {};
-    Object.entries(localValues).forEach(([sid, val]) => {
-      if (val === '' || val === null || val === undefined) return;
-      if (val === 'A' || val === 'E') {
-        sanitized[sid] = val;
+    students.forEach((st) => {
+      const val = localValues[st.id];
+      if (val === '' || val === null || val === undefined) {
+        sanitized[st.id] = '';
+      } else if (val === 'A' || val === 'E') {
+        sanitized[st.id] = val;
       } else {
         const num = parseFloat(val);
         if (!isNaN(num)) {
           const clamped = Math.min(Math.max(0, num), maxMarks);
-          sanitized[sid] = String(clamped);
+          sanitized[st.id] = String(clamped);
+        } else {
+          sanitized[st.id] = '';
         }
       }
     });
@@ -182,13 +197,21 @@ export const LedgerRoster = ({
     setStatusMessage(`Filled empty entries with ${targetVal}. Press Save.`);
   };
 
-  const handleQuickClearAll = () => {
-    if (!window.confirm('Clear all unsaved entries for this course?')) return;
+  const handleQuickClearAll = async () => {
+    if (!window.confirm('Clear all entries for this course and remove from database?')) return;
     const nextValues = {};
     students.forEach(st => { nextValues[st.id] = ''; });
     setLocalValues(nextValues);
     setShowQuickFillMenu(false);
-    setStatusMessage('Cleared all marks. Click Save to persist.');
+    
+    // Save cleared state to database
+    try {
+      await onSave(std, subject, nextValues);
+      setStatusMessage('Cleared all entries and updated database.');
+      setShowStamp(true);
+    } catch (e) {
+      setStatusMessage('Failed to clear database entries.');
+    }
   };
 
   if (students.length === 0) {
@@ -271,7 +294,7 @@ export const LedgerRoster = ({
                 <button onClick={() => handleQuickFillEmpty(Math.round(maxMarks * 0.75))}>Fill Empty with 75% ({Math.round(maxMarks * 0.75)})</button>
                 <button onClick={() => handleQuickFillEmpty('A')}>Mark Remaining as Absent (A)</button>
                 <div className="menu-divider"></div>
-                <button onClick={handleQuickClearAll} style={{ color: 'var(--red)' }}>Clear All Entries</button>
+                <button onClick={handleQuickClearAll} style={{ color: 'var(--red)' }}>Clear All Course Entries</button>
               </div>
             )}
           </div>

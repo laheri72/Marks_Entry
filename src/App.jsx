@@ -91,6 +91,7 @@ const MainApp = () => {
     // Subscribe to Real-Time Cloud DB updates across devices
     const unsubMarks = storageService.subscribeToKey(STORAGE_KEYS.MARKS, (newMarks) => {
       if (newMarks) setMarksMap(newMarks);
+      else setMarksMap({});
     });
     const unsubStds = storageService.subscribeToKey(STORAGE_KEYS.STDS, (newStds) => {
       if (newStds) setStds(newStds);
@@ -114,29 +115,35 @@ const MainApp = () => {
     };
   }, []);
 
-  // Save Marks Entry Handler
+  // Save Marks Entry Handler (With Explicit Deletion Handling!)
   const handleSaveMarks = async (std, subject, inputValues) => {
     const key = `${std}|${subject}`;
     const updatedKeyObj = { ...(marksMap[key] || {}) };
     const now = Date.now();
 
     Object.entries(inputValues).forEach(([sid, val]) => {
-      if (val !== '' && val !== null) {
+      if (val !== '' && val !== null && val !== undefined) {
         updatedKeyObj[sid] = {
           value: String(val),
           enteredBy: currentUser?.id || currentUser?.email,
-          enteredByName: currentUser?.name || 'Teacher',
+          enteredByName: currentUser?.name || 'Administrator',
           at: now
         };
       } else {
-        delete updatedKeyObj[sid];
+        delete updatedKeyObj[sid]; // Explicitly remove cleared student entry!
       }
     });
 
-    const nextMarksMap = { ...marksMap, [key]: updatedKeyObj };
+    const nextMarksMap = { ...marksMap };
+    if (Object.keys(updatedKeyObj).length > 0) {
+      nextMarksMap[key] = updatedKeyObj;
+    } else {
+      delete nextMarksMap[key]; // Course is completely cleared!
+    }
+
     setMarksMap(nextMarksMap);
 
-    // Save to Granular Cloud Firestore Document & propagate errors if Cloud fails
+    // Save to Granular Cloud Firestore Document
     await storageService.saveClassSubjectMarks(std, subject, updatedKeyObj, currentUser);
   };
 
