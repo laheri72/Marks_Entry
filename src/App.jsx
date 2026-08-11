@@ -61,7 +61,7 @@ const MainApp = () => {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [currentView, setView] = useState('entry'); // 'entry' | 'settings' | 'reports'
 
-  // Initialize Data from Storage or Seed Fallbacks
+  // Initialize Data from Storage & Subscribe to Real-Time Cloud DB Sync
   useEffect(() => {
     async function loadAppData() {
       try {
@@ -87,6 +87,31 @@ const MainApp = () => {
       }
     }
     loadAppData();
+
+    // Subscribe to Real-Time Cloud DB updates across devices!
+    const unsubMarks = storageService.subscribeToKey(STORAGE_KEYS.MARKS, (newMarks) => {
+      if (newMarks) setMarksMap(newMarks);
+    });
+    const unsubStds = storageService.subscribeToKey(STORAGE_KEYS.STDS, (newStds) => {
+      if (newStds) setStds(newStds);
+    });
+    const unsubSubjects = storageService.subscribeToKey(STORAGE_KEYS.SUBJECTS, (newSubs) => {
+      if (newSubs) setSubjectsByStd(newSubs);
+    });
+    const unsubStudents = storageService.subscribeToKey(STORAGE_KEYS.STUDENTS, (newStudents) => {
+      if (newStudents) setStudentsByStd(newStudents);
+    });
+    const unsubMax = storageService.subscribeToKey(STORAGE_KEYS.MAX_MARKS, (newMax) => {
+      if (newMax) setMaxMarks(newMax);
+    });
+
+    return () => {
+      unsubMarks();
+      unsubStds();
+      unsubSubjects();
+      unsubStudents();
+      unsubMax();
+    };
   }, []);
 
   // Save Marks Entry Handler
