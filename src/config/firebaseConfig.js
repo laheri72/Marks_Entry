@@ -2,14 +2,14 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Firebase Configuration (Uses Environment variables or Cloud Defaults)
+// Real Production Firebase Configuration for ajs-marks-app-2026
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDemoKeyForRegistrationApp2026",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "the-register-marks.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "the-register-marks",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "the-register-marks.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "987654321012",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:987654321012:web:abcdef123456"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAIVGkahAPVpIbqOeQr5Z6jKa_cBxArWrY",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ajs-marks-app-2026.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ajs-marks-app-2026",
+  storageBucket: "ajs-marks-app-2026.firebasestorage.app",
+  messagingSenderId: "988637153751",
+  appId: "1:988637153751:web:1d4b718ce7639d3076e392"
 };
 
 // Initialize Firebase Instance
