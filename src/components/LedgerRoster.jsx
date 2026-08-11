@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight, BarChart2, Hash } from 'lucide-react';
+import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportService } from '../services/exportService';
 
 export const LedgerRoster = ({
@@ -17,16 +17,16 @@ export const LedgerRoster = ({
   const [showStamp, setShowStamp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Pagination & Segmentation State
+  // Pagination State
   const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Quick Fill Prompt State
+  // Quick Fill Dropdown State
   const [showQuickFillMenu, setShowQuickFillMenu] = useState(false);
 
-  const inputRefs = useRef([]);
+  const inputRefs = useRef({});
 
-  // Sync local input values when Class/Subject/savedMarks changes
+  // 1. INITIALIZE LOCAL VALUES WHEN CLASS OR SUBJECT CHANGES (ONLY ON STD/SUBJECT SWITCH)
   useEffect(() => {
     const initial = {};
     students.forEach((st) => {
@@ -37,17 +37,28 @@ export const LedgerRoster = ({
     setStatusMessage('Marks save automatically as you type or press Enter.');
     setShowStamp(false);
     setCurrentPage(1);
+    setSearchQuery('');
+    inputRefs.current = {};
 
+    // Auto-focus first student input when switching class or subject
     setTimeout(() => {
-      if (inputRefs.current[0]) {
-        inputRefs.current[0].focus();
+      const firstRef = inputRefs.current[0];
+      if (firstRef) {
+        firstRef.focus();
       }
-    }, 50);
-  }, [std, subject, savedMarks, students]);
+    }, 60);
+  }, [std, subject]); // Dependent ONLY on std & subject - NOT savedMarks or students!
 
   const handleInputChange = (studentId, rawValue) => {
-    // Allow digits, single decimal point, or 'A' (Absent) / 'E' (Exempt)
+    // Sanitize: allow numbers, single decimal point, or 'A' (Absent) / 'E' (Exempt)
     let clean = rawValue.toUpperCase().replace(/[^0-9.AE]/g, '');
+    
+    // Disallow multiple decimal points
+    const parts = clean.split('.');
+    if (parts.length > 2) {
+      clean = parts[0] + '.' + parts.slice(1).join('');
+    }
+
     setLocalValues((prev) => ({ ...prev, [studentId]: clean }));
     setStatusMessage('Unsaved changes — press Enter or click Save marks.');
     setShowStamp(false);
@@ -59,14 +70,18 @@ export const LedgerRoster = ({
     setShowStamp(true);
   };
 
-  // Keyboard Navigation: Enter, Up/Down Arrows
+  // Keyboard Navigation: Enter, Shift+Enter, Up/Down Arrows
   const handleKeyDown = (e, index) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       executeSave();
       if (e.shiftKey) {
-        if (index > 0 && inputRefs.current[index - 1]) inputRefs.current[index - 1].focus();
+        // Jump to previous student
+        if (index > 0 && inputRefs.current[index - 1]) {
+          inputRefs.current[index - 1].focus();
+        }
       } else {
+        // Jump to next student
         if (index + 1 < paginatedStudents.length && inputRefs.current[index + 1]) {
           inputRefs.current[index + 1].focus();
         }
@@ -84,7 +99,7 @@ export const LedgerRoster = ({
     }
   };
 
-  // Quick Adjustment Utilities
+  // Quick Increment Touch Adjusters
   const adjustMark = (studentId, delta) => {
     const currentVal = parseFloat(localValues[studentId] || 0);
     const nextVal = Math.min(Math.max(0, currentVal + delta), maxMarks);
@@ -280,7 +295,7 @@ export const LedgerRoster = ({
         </div>
       </div>
 
-      {/* 4. PAGINATED ROSTER ROWS WITH QUICK INCREMENT BUTTONS */}
+      {/* 4. PAGINATED ROSTER ROWS WITH STABLE INPUT REFS */}
       <div className="ledger-rows">
         {paginatedStudents.length === 0 ? (
           <div style={{ padding: '30px', textAlign: 'center', color: 'var(--ink-faint)', fontSize: '13.5px' }}>
