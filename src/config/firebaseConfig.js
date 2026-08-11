@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Firebase Configuration
@@ -16,9 +16,15 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Force Google Account Selector Prompt every time
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 export const db = getFirestore(app);
 
-// Real Google OAuth Sign-In Popup Helper
+// Real Google OAuth Sign-In Popup with Redirect Fallback
 export const signInWithGoogleCloud = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -31,9 +37,39 @@ export const signInWithGoogleCloud = async () => {
       role: 'teacher'
     };
   } catch (error) {
-    console.error("Google Auth Popup Error:", error.code, error.message);
+    console.warn("Popup auth note:", error.code, error.message);
+    if (
+      error.code === 'auth/popup-blocked' ||
+      error.code === 'auth/popup-closed-by-user' ||
+      error.code === 'auth/user-cancelled' ||
+      error.code === 'auth/cancelled-popup-request'
+    ) {
+      // Fallback to OAuth Redirect mode for browsers blocking popups
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
     throw error;
   }
+};
+
+// Check Google Redirect OAuth Result on page return
+export const checkGoogleRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const user = result.user;
+      return {
+        id: user.uid,
+        email: user.email,
+        name: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL,
+        role: 'teacher'
+      };
+    }
+  } catch (e) {
+    console.error("Redirect Result Error:", e);
+  }
+  return null;
 };
 
 export const signOutCloud = async () => {

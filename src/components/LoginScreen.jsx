@@ -1,19 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, ArrowRight, Lock, ShieldAlert, LogIn } from 'lucide-react';
+import { ShieldAlert, Lock, LogIn } from 'lucide-react';
 
 export const LoginScreen = () => {
-  const { loginWithGoogleOAuth, processGoogleUser, authError, unauthorizedEmail } = useAuth();
-  const [customEmail, setCustomEmail] = useState('');
-
-  const handleCustomGoogleSignIn = (e) => {
-    e.preventDefault();
-    if (!customEmail.trim()) return;
-    processGoogleUser({
-      email: customEmail.trim(),
-      name: customEmail.split('@')[0].replace('.', ' ')
-    });
-  };
+  const { loginWithGoogleOAuth, authError, unauthorizedEmail } = useAuth();
 
   return (
     <div className="login-screen">
@@ -29,7 +19,7 @@ export const LoginScreen = () => {
               <ShieldAlert size={18} /> Access Pending Approval
             </div>
             <p style={{ fontSize: '12.5px', color: '#55636F', margin: 0, lineHeight: 1.4 }}>
-              Your Google account <b>{unauthorizedEmail}</b> is not on the authorized teacher roster yet. Please contact School Admin <b>Idris Laheri</b> (idrislaheri72@gmail.com) to add your email in Settings.
+              Your Google account <b>{unauthorizedEmail}</b> is not on the authorized teacher roster yet. Please contact School Admin <b>Idris Laheri</b> (idrislaheri72@gmail.com) to grant access in Settings.
             </p>
           </div>
         )}
@@ -45,6 +35,7 @@ export const LoginScreen = () => {
         <button
           className="google-btn"
           onClick={loginWithGoogleOAuth}
+          style={{ margin: '16px 0 10px' }}
         >
           <svg className="google-icon" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -55,35 +46,10 @@ export const LoginScreen = () => {
           Sign in with Google Account
         </button>
 
-        <form onSubmit={handleCustomGoogleSignIn} style={{ marginTop: '20px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--ink-faint)', marginBottom: '8px', fontWeight: 500 }}>
-            Or enter authorized Google email directly:
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="email"
-              placeholder="e.g. idrislaheri72@gmail.com"
-              value={customEmail}
-              onChange={(e) => setCustomEmail(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '9px 12px',
-                border: '1px solid var(--rule)',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'IBM Plex Sans'
-              }}
-            />
-            <button type="submit" className="btn btn-primary btn-sm">
-              Log in <ArrowRight size={14} />
-            </button>
-          </div>
-        </form>
-
         <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: '1px solid var(--rule)', fontSize: '12px', color: 'var(--ink-faint)', lineHeight: 1.5, textAlign: 'center' }}>
           <Lock size={12} style={{ display: 'inline', marginRight: '4px' }} />
           Primary School Admin: <b>idrislaheri72@gmail.com</b><br />
-          Teachers must be authorized by Admin in Settings to access.
+          Teachers must be authorized by Admin in Settings to access portal.
         </div>
       </div>
     </div>

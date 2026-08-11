@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEFAULT_DEMO_TEACHERS, SEED_STDS } from '../seedData';
 import { storageService, STORAGE_KEYS } from '../services/storageService';
-import { signInWithGoogleCloud, signOutCloud } from '../config/firebaseConfig';
+import { signInWithGoogleCloud, checkGoogleRedirectResult, signOutCloud } from '../config/firebaseConfig';
 
 const AuthContext = createContext(null);
 
@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [unauthorizedEmail, setUnauthorizedEmail] = useState(null);
 
-  // Initialize Teachers & Restore Active Auth Session
+  // Initialize Teachers & Restore Active Auth Session / OAuth Redirect Result
   useEffect(() => {
     async function initAuth() {
       let savedTeachers = await storageService.get(STORAGE_KEYS.TEACHERS, null);
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
         await storageService.set(STORAGE_KEYS.TEACHERS, savedTeachers);
       }
       
-      // Always ensure idrislaheri72@gmail.com is present as Admin
+      // Always ensure idrislaheri72@gmail.com is present as Primary Admin
       let hasAdmin = savedTeachers.some(t => t.email.toLowerCase() === 'idrislaheri72@gmail.com');
       if (!hasAdmin) {
         savedTeachers.unshift({
@@ -35,6 +35,14 @@ export const AuthProvider = ({ children }) => {
       }
 
       setTeachers(savedTeachers);
+
+      // Check if coming back from Google OAuth Redirect
+      const redirectUser = await checkGoogleRedirectResult();
+      if (redirectUser) {
+        await processGoogleUser(redirectUser);
+        setLoading(false);
+        return;
+      }
 
       const activeSession = await storageService.get('tr_active_session', null);
       if (activeSession) {
@@ -89,32 +97,34 @@ export const AuthProvider = ({ children }) => {
     await updateTeachersList(newList);
   };
 
-  // Real Google OAuth Popup Sign-In Handler
+  // Real Google OAuth Popup / Redirect Handler
   const loginWithGoogleOAuth = async () => {
     setAuthError(null);
     setUnauthorizedEmail(null);
     try {
       const gUser = await signInWithGoogleCloud();
-      return await processGoogleUser(gUser);
+      if (gUser) {
+        return await processGoogleUser(gUser);
+      }
     } catch (e) {
       console.error("OAuth error:", e);
-      if (e.code === 'auth/popup-closed-by-user') {
-        setAuthError("Google sign-in popup was closed before completing.");
-      } else if (e.code === 'auth/unauthorized-domain') {
-        setAuthError("This domain is not authorized in Firebase Console yet. Please add your domain to Firebase > Auth > Settings > Authorized Domains.");
+      if (e.code === 'auth/unauthorized-domain') {
+        setAuthError("Domain not authorized in Firebase. Please add your site URL to Firebase Console > Auth > Settings > Authorized Domains.");
+      } else if (e.code === 'auth/operation-not-allowed') {
+        setAuthError("Google Provider not enabled in Firebase Console yet. Please enable Google under Firebase > Auth > Sign-in method.");
       } else {
         setAuthError(e.message || "Google Sign-In failed.");
       }
     }
   };
 
-  // Custom Google Institutional Email Sign-In / User Processing
+  // Process Google User & Verify Authorization Roster
   const processGoogleUser = async (googleUserObj) => {
     if (!googleUserObj || !googleUserObj.email) return;
 
     const email = googleUserObj.email.trim().toLowerCase();
 
-    // Primary Admin Check
+    // Primary Admin Check (idrislaheri72@gmail.com)
     if (email === 'idrislaheri72@gmail.com') {
       let adminProfile = teachers.find(t => t.email.toLowerCase() === email);
       if (!adminProfile) {
@@ -128,7 +138,7 @@ export const AuthProvider = ({ children }) => {
         };
         await updateTeachersList([...teachers, adminProfile]);
       } else {
-        adminProfile.role = 'admin'; // Ensure admin role
+        adminProfile.role = 'admin';
       }
       setCurrentUser(adminProfile);
       await storageService.set('tr_active_session', adminProfile);
@@ -163,7 +173,7 @@ export const AuthProvider = ({ children }) => {
   // Verification Helper: Is teacher assigned to Class + Subject?
   const isAssigned = (std, subject) => {
     if (!currentUser) return false;
-    if (isAdmin) return true; // Admin sees all
+    if (isAdmin) return true;
     const key = `${std}|${subject}`;
     return (currentUser.assignments || []).includes(key);
   };
