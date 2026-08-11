@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Register — Marks Entry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF3E8;
+    --paper-deep:#E4ECDC;
+    --rule:#C6D3BC;
+    --card:#FBFBF6;
+    --ink:#1E2A38;
+    --ink-soft:#55636F;
+    --ink-faint:#8B978F;
+    --red:#B4382C;
+    --red-soft:#D9BDB6;
+    --gold:#A3812E;
+    --gold-soft:#E9DCB8;
+    --green-ok:#3F6B4A;
+    --blue-admin:#3A5A78;
+    --shadow: 0 1px 2px rgba(30,42,56,0.06), 0 8px 24px rgba(30,42,56,0.08);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{ font-family:'Fraunces', serif; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+
+  #app{ min-height:100vh; display:flex; flex-direction:column; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 22px; background:var(--card); border-bottom:1px solid var(--rule);
+    box-shadow: var(--shadow); position:sticky; top:0; z-index:20; flex-wrap:wrap; gap:10px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:34px; height:34px; border-radius:50%; background:var(--ink); color:var(--paper);
+    display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif;
+    font-weight:600; font-size:17px; flex-shrink:0;
+  }
+  .brand-text{ line-height:1.1; }
+  .brand-text .name{ font-family:'Fraunces',serif; font-weight:600; font-size:17px; }
+  .brand-text .sub{ font-size:11px; color:var(--ink-faint); letter-spacing:.04em; text-transform:uppercase; }
+
+  .topbar-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .who{ font-size:13px; color:var(--ink-soft); margin-right:4px; }
+  .who b{ color:var(--ink); }
+  .role-badge{
+    font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    padding:2px 7px; border-radius:20px; background:var(--gold-soft); color:#6b551f;
+  }
+  .role-badge.admin{ background:#DCE6EE; color:var(--blue-admin); }
+  .iconbtn{
+    border:1px solid var(--rule); background:var(--card); color:var(--ink-soft);
+    border-radius:8px; padding:7px 12px; font-size:13px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; font-family:'IBM Plex Sans';
+    transition: all .15s ease;
+  }
+  .iconbtn:hover{ background:var(--paper-deep); color:var(--ink); border-color:var(--ink-faint); }
+  .iconbtn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  main{ flex:1; width:100%; }
+  .wrap{ max-width:960px; margin:0 auto; padding:28px 20px 80px; }
+
+  .login-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(163,129,46,0.07), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(180,56,44,0.05), transparent 45%),
+      var(--paper);
+  }
+  .login-card{
+    width:100%; max-width:380px; background:var(--card); border:1px solid var(--rule);
+    border-radius:var(--radius); box-shadow:var(--shadow); padding:34px 32px 30px;
+  }
+  .login-mark{
+    width:52px; height:52px; border-radius:50%; background:var(--ink); color:var(--paper);
+    display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif;
+    font-weight:600; font-size:26px; margin:0 auto 14px;
+  }
+  .login-title{ text-align:center; font-family:'Fraunces',serif; font-weight:600; font-size:24px; margin:0; }
+  .login-sub{ text-align:center; color:var(--ink-faint); font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; margin:4px 0 26px; }
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:6px; font-weight:500; }
+  .field input{
+    width:100%; padding:11px 13px; border:1px solid var(--rule); border-radius:7px;
+    font-family:'IBM Plex Sans'; font-size:14.5px; background:#fff; color:var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(163,129,46,0.15); }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    border:none; border-radius:8px; padding:12px 18px; font-size:14.5px; font-weight:600;
+    cursor:pointer; font-family:'IBM Plex Sans'; transition: transform .08s ease, background .15s ease, opacity .15s ease;
+  }
+  .btn:active{ transform: scale(0.98); }
+  .btn-primary{ background:var(--ink); color:var(--paper); width:100%; }
+  .btn-primary:hover{ background:#2B3B4C; }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1px solid var(--rule); }
+  .btn-ghost:hover{ background:var(--paper-deep); }
+  .btn-gold{ background:var(--gold); color:#fff; }
+  .btn-gold:hover{ background:#8f7027; }
+  .btn-red{ background:var(--red); color:#fff; }
+  .btn-red:hover{ background:#932f25; }
+  .btn-sm{ padding:7px 12px; font-size:12.5px; border-radius:6px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+  .login-error{
+    background:rgba(180,56,44,0.08); border:1px solid var(--red-soft); color:var(--red);
+    font-size:13px; padding:9px 12px; border-radius:7px; margin-bottom:14px; display:none;
+  }
+  .login-switch{ text-align:center; margin-top:18px; font-size:13px; color:var(--ink-faint); }
+  .login-switch a{ color:var(--gold); cursor:pointer; text-decoration:none; font-weight:600; }
+  .login-switch a:hover{ text-decoration:underline; }
+  .demo-note{ margin-top:16px; font-size:11.5px; color:var(--ink-faint); text-align:center; line-height:1.5; }
+
+  .step-title{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; color:var(--ink-soft); margin:0 0 10px; letter-spacing:.02em; }
+  .step-block{ margin-bottom:26px; }
+
+  .tabrow{ display:flex; flex-wrap:wrap; gap:9px; }
+  .tab{
+    background:var(--card); border:1px solid var(--rule); border-radius:8px; padding:11px 16px;
+    font-size:14px; font-weight:600; color:var(--ink-soft); cursor:pointer; transition: all .13s ease;
+    font-family:'IBM Plex Sans'; display:flex; align-items:center; gap:8px;
+  }
+  .tab .cnt{ font-size:11px; font-weight:500; color:var(--ink-faint); background:var(--paper-deep); padding:2px 6px; border-radius:20px; }
+  .tab:hover{ border-color:var(--ink-faint); color:var(--ink); }
+  .tab.active{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
+  .tab.active .cnt{ background:rgba(255,255,255,0.15); color:var(--paper); }
+
+  .ledger-card{ background:var(--card); border:1px solid var(--rule); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .ledger-head{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
+    border-bottom:2px solid var(--ink); background:var(--paper-deep); flex-wrap:wrap; gap:10px;
+  }
+  .ledger-head h3{ margin:0; font-family:'Fraunces',serif; font-size:19px; font-weight:600; }
+  .ledger-head .meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .maxmarks{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-soft); }
+  .maxmarks input{
+    width:56px; padding:5px 7px; border:1px solid var(--rule); border-radius:5px;
+    font-family:'IBM Plex Mono'; font-size:13px; text-align:center;
+  }
+
+  .ledger-rows{
+    background-image: repeating-linear-gradient(to bottom, transparent, transparent 55px, var(--rule) 56px);
+  }
+  .ledger-row{ display:grid; grid-template-columns:52px 1fr 130px; align-items:center; padding:0 20px; min-height:56px; gap:12px; }
+  .ledger-row.with-audit{ grid-template-columns:44px 1fr 90px 170px; }
+  .ledger-row .roll{ font-family:'IBM Plex Mono'; font-size:13px; color:var(--ink-faint); }
+  .ledger-row .sname{ font-size:14.5px; font-weight:500; }
+  .marks-input-wrap{ display:flex; align-items:center; gap:6px; justify-content:flex-end; }
+  .marks-input{
+    width:64px; padding:8px 9px; border:none; border-bottom:2px solid var(--rule); background:transparent;
+    font-family:'IBM Plex Mono'; font-size:15px; font-weight:600; text-align:right; color:var(--red);
+    transition:border-color .15s ease;
+  }
+  .marks-input:focus{ outline:none; border-color:var(--red); }
+  .marks-input.filled{ border-color:var(--green-ok); }
+  .marks-of{ font-size:12px; color:var(--ink-faint); font-family:'IBM Plex Mono'; }
+  .audit-val{ font-family:'IBM Plex Mono'; font-size:14px; font-weight:600; text-align:right; color:var(--ink); }
+  .audit-by{ font-size:11.5px; color:var(--ink-faint); text-align:right; line-height:1.4; }
+
+  .ledger-footer{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; padding:16px 20px;
+    border-top:1px solid var(--rule); background:var(--paper-deep); flex-wrap:wrap;
+  }
+  .save-status{ font-size:12.5px; color:var(--ink-faint); display:flex; align-items:center; gap:7px; }
+  .stamp{
+    display:none; align-items:center; gap:6px; color:var(--green-ok); font-weight:700; font-size:12.5px;
+    letter-spacing:.04em; text-transform:uppercase; border:2px solid var(--green-ok); border-radius:6px;
+    padding:4px 10px; transform:rotate(-3deg);
+  }
+  .stamp.show{ display:inline-flex; animation: stampin .25s ease; }
+  @keyframes stampin{ from{ transform:rotate(-3deg) scale(1.4); opacity:0;} to{ transform:rotate(-3deg) scale(1); opacity:1;} }
+
+  .empty-state{ text-align:center; padding:50px 24px; color:var(--ink-soft); }
+  .empty-state .big{ font-family:'Fraunces',serif; font-size:19px; color:var(--ink); margin-bottom:8px; }
+  .empty-state p{ font-size:13.5px; color:var(--ink-faint); max-width:380px; margin:0 auto 18px; line-height:1.6; }
+
+  .settings-grid{ display:grid; grid-template-columns:1fr; gap:20px; }
+  .panel{ background:var(--card); border:1px solid var(--rule); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px; }
+  .panel h3{ margin:0 0 4px; font-family:'Fraunces',serif; font-size:17px; }
+  .panel .hint{ font-size:12.5px; color:var(--ink-faint); margin-bottom:16px; }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .chip{
+    display:flex; align-items:center; gap:8px; background:var(--paper-deep); border:1px solid var(--rule);
+    border-radius:20px; padding:6px 8px 6px 14px; font-size:13px; font-weight:500;
+  }
+  .chip .x{ cursor:pointer; color:var(--ink-faint); width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .chip .x:hover{ background:var(--red); color:#fff; }
+  .inline-add{ display:flex; gap:8px; flex-wrap:wrap; }
+  .inline-add input{ flex:1; min-width:120px; padding:9px 12px; border:1px solid var(--rule); border-radius:7px; font-size:13.5px; font-family:'IBM Plex Sans'; }
+  .inline-add input:focus{ outline:none; border-color:var(--gold); }
+
+  .std-select-mini{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .std-select-mini select{ padding:8px 12px; border:1px solid var(--rule); border-radius:7px; font-size:13.5px; background:#fff; font-family:'IBM Plex Sans'; font-weight:600; }
+
+  .student-list{ display:flex; flex-direction:column; gap:6px; }
+  .student-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--rule); border-radius:7px; background:var(--paper-deep); }
+  .student-row .roll{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--ink-faint); width:26px; }
+  .student-row .sname{ flex:1; font-size:13.5px; }
+  .student-row .x{ cursor:pointer; color:var(--ink-faint); font-size:15px; padding:2px 6px; border-radius:5px; }
+  .student-row .x:hover{ background:var(--red); color:#fff; }
+
+  .subtle-note{ font-size:11.5px; color:var(--ink-faint); margin-top:6px; }
+
+  textarea.bulk-area{
+    width:100%; min-height:130px; padding:12px 13px; border:1px solid var(--rule); border-radius:7px;
+    font-family:'IBM Plex Mono'; font-size:13px; resize:vertical; margin-bottom:10px;
+  }
+  textarea.bulk-area:focus{ outline:none; border-color:var(--gold); }
+  .bulk-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+
+  .teacher-row{
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--rule);
+    border-radius:7px; background:var(--paper-deep); margin-bottom:6px; flex-wrap:wrap;
+  }
+  .teacher-row .tname{ font-weight:600; font-size:13.5px; flex:1; min-width:120px; }
+  .teacher-row .tid{ font-size:11.5px; color:var(--ink-faint); font-family:'IBM Plex Mono'; }
+
+  .overview-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .overview-table th{ text-align:left; padding:9px 10px; border-bottom:2px solid var(--ink); font-family:'Fraunces',serif; font-size:13px; }
+  .overview-table td{ padding:9px 10px; border-bottom:1px solid var(--rule); }
+  .overview-table tr:hover td{ background:var(--paper-deep); cursor:pointer; }
+  .prog-pill{
+    font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; padding:2px 8px; border-radius:20px;
+    background:var(--paper-deep); color:var(--ink-soft); display:inline-block;
+  }
+  .prog-pill.complete{ background:#DCEADD; color:var(--green-ok); }
+  .prog-pill.empty{ background:#F0ECE3; color:var(--ink-faint); }
+
+  ::selection{ background: var(--gold-soft); }
+  @media (max-width:520px){
+    .wrap{ padding:20px 14px 70px; }
+    .ledger-row{ grid-template-columns:36px 1fr 100px; padding:0 12px; }
+    .ledger-row.with-audit{ grid-template-columns:30px 1fr 70px 110px; }
+    .ledger-head, .ledger-footer{ padding:14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+window.__SEED_STDS__ = ["1-A (Boys)", "1-A (Girls)", "1-B (Boys)", "1-B (Girls)", "2-A (Boys)", "2-A (Girls)", "2-B (Boys)", "2-B (Girls)", "3-A (Boys)", "3-A (Girls)", "3-B (Boys)", "3-B (Girls)", "3-C (Girls)", "4-A (Boys)", "4-A (Girls)", "4-B (Boys)", "4-B (Girls)", "4-C (Girls)", "5-A (Boys)", "5-A (Girls)", "5-B (Boys)", "5-B (Girls)", "6-A (Boys)", "6-A (Girls)", "6-B (Boys)", "7-A (Boys)", "7-A (Girls)"];
+window.__SEED_SUBJECTS__ = {"1-A (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "1-A (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "1-B (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "1-B (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "2-A (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "2-A (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "2-B (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "2-B (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "3-A (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "3-A (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "3-B (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "3-B (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "3-C (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "4-A (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "4-A (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "4-B (Boys)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "4-B (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "4-C (Girls)": ["Maths", "Science", "Physics", "Chemistry", "Biology", "History", "Geography"], "5-A (Boys)": ["Sociology", "Economics", "Business Studies"], "5-A (Girls)": ["Sociology", "Economics", "Business Studies"], "5-B (Boys)": ["Sociology", "Economics", "Business Studies"], "5-B (Girls)": ["Sociology", "Economics", "Business Studies"], "6-A (Boys)": ["Sociology", "Economics", "Business Studies"], "6-A (Girls)": ["Sociology", "Economics", "Business Studies"], "6-B (Boys)": ["Sociology", "Economics", "Business Studies"], "7-A (Boys)": ["Sociology", "Economics", "Business Studies"], "7-A (Girls)": ["Sociology", "Economics", "Business Studies"]};
+window.__SEED_STUDENTS__ = {"1-A (Boys)": [{"id": "st_28903", "name": "Idris bhai Abdulqadir bhai Kapadiya", "roll": 28903}, {"id": "st_28907", "name": "Ammar bhai Shaikh Fakhruddin bhai Nagarwala", "roll": 28907}, {"id": "st_28910", "name": "Shabbir bhai Shaikh Abdullah bhai Imadi", "roll": 28910}, {"id": "st_28920", "name": "Mufaddal bhai Husain bhai Bootwala", "roll": 28920}, {"id": "st_28938", "name": "Burhanuddin bhai Shaikh Husain bhai Merchant", "roll": 28938}, {"id": "st_28952", "name": "Burhanuddin bhai Murtaza bhai Vardhawala", "roll": 28952}, {"id": "st_28965", "name": "Mohammed bhai Shaikh Mufaddal bhai Shakir", "roll": 28965}, {"id": "st_28988", "name": "Mukarram bhai Qusai bhai Blue", "roll": 28988}, {"id": "st_29004", "name": "Burhanuddin bh Huzaifa bh Vaziri", "roll": 29004}, {"id": "st_29031", "name": "Burhanuddin bhai Shaikh Yusuf bhai Shajapurwala", "roll": 29031}, {"id": "st_29040", "name": "Husain bhai Abdulqadir bhai Dudhiyawala", "roll": 29040}, {"id": "st_29067", "name": "Burhanuddin bhai Shaikh Mustafa bhai Cheap Jack (Kachwala)", "roll": 29067}, {"id": "st_29079", "name": "Zohair bhai Mufaddal bhai Dudhiawala", "roll": 29079}, {"id": "st_29127", "name": "Aliasgar bhai Ishaq bhai Matiwala", "roll": 29127}, {"id": "st_29154", "name": "Abduttayyeb bs Miqdad bs Burhanee", "roll": 29154}, {"id": "st_29171", "name": "Husain bhai Mustafa bhai Topiwala", "roll": 29171}, {"id": "st_29390", "name": "Qusai bhai Fakhruddin bhai Dhundhiyawala", "roll": 29390}, {"id": "st_29391", "name": "Taha bhai Moiz bhai Sopara", "roll": 29391}, {"id": "st_29392", "name": "Burhanuddin bhai Abdulqadir bhai Hakimi", "roll": 29392}, {"id": "st_29393", "name": "Ibrahim bhai Huzefa bhai Delmalwala", "roll": 29393}, {"id": "st_29415", "name": "Murtaza bhai Aliasgar bhai Kadwalwala", "roll": 29415}], "1-A (Girls)": [{"id": "st_28918", "name": "Batul bai Mustafa bhai Bohari", "roll": 28918}, {"id": "st_28935", "name": "Batul bai Murtaza bhai Baji", "roll": 28935}, {"id": "st_28949", "name": "Amatullah bai Mulla Huzaifa bhai Hakimi", "roll": 28949}, {"id": "st_28961", "name": "Insiya bai Shaikh Murtaza bhai Ghadiali", "roll": 28961}, {"id": "st_28978", "name": "Batool bai Fakhruddin bhai Jamali", "roll": 28978}, {"id": "st_28980", "name": "Umme Salama bai Mustafa bhai Chokhawala", "roll": 28980}, {"id": "st_29026", "name": "Nafisa bai Aliasgar bhai Tinwala", "roll": 29026}, {"id": "st_29039", "name": "Ruqaiyah bai Taher bhai Badshah", "roll": 29039}, {"id": "st_29045", "name": "Zahra bai Shaikh Murtaza bhai Nadir", "roll": 29045}, {"id": "st_29059", "name": "Fatema bai Mulla Murtaza bhai Rangwala", "roll": 29059}, {"id": "st_29131", "name": "Zainab bai Husain bhai Teen wala", "roll": 29131}, {"id": "st_29132", "name": "Batul bai Moiz bhai Vora", "roll": 29132}, {"id": "st_29133", "name": "Zainab bai Mustafahusain bhai Bohra", "roll": 29133}, {"id": "st_29389", "name": "Insiyah bai Yusuf bhai Alirajpurwala", "roll": 29389}, {"id": "st_29394", "name": "Amatullah bai Shaikh Adnan bhai Aamir", "roll": 29394}, {"id": "st_29396", "name": "Aarefa bai Mufaddal bhai Saifee", "roll": 29396}, {"id": "st_29403", "name": "Arwa bai Mufaddal bhai Tankiwala", "roll": 29403}], "1-B (Boys)": [{"id": "st_28912", "name": "Mufaddal bhai Husain bhai banswarawala", "roll": 28912}, {"id": "st_28914", "name": "Moiz bhai Shaikh Huzefa bhai Sabir", "roll": 28914}, {"id": "st_28919", "name": "Burhanuddin bhai Shaikh Moiz bhai Shakir", "roll": 28919}, {"id": "st_28922", "name": "Burhanuddin bhai Shaikh Moiz bhai Burhani", "roll": 28922}, {"id": "st_29003", "name": "Burhanuddin bhai Shaikh Murtaza bhai Kanchwala", "roll": 29003}, {"id": "st_29014", "name": "Mudar bhai Mufaddal bhai Mithi", "roll": 29014}, {"id": "st_29027", "name": "Burhanuddin bhai Shaikh Mufaddal bhai Qamari", "roll": 29027}, {"id": "st_29048", "name": "Murtaza bhai Shaikh Mustafa bhai Hamid", "roll": 29048}, {"id": "st_29050", "name": "Taher bhai Mulla Burhanuddin bhai Katthawala", "roll": 29050}, {"id": "st_29068", "name": "Burhanuddin bhai Mustafa bhai Lakdawala", "roll": 29068}, {"id": "st_29100", "name": "Mohammed bhai Mulla Husain bhai Zaveri", "roll": 29100}, {"id": "st_29120", "name": "Taher bhai Mulla Mustansir bhai Saifee", "roll": 29120}, {"id": "st_29129", "name": "Burhanuddin bs M. Murtaza bh Vanthaliwala", "roll": 29129}, {"id": "st_29130", "name": "Taha bhai Qusai bhai Kagalwala", "roll": 29130}, {"id": "st_29140", "name": "Mufaddal bhai Aliasgar bhai Quilonwala", "roll": 29140}, {"id": "st_29151", "name": "Burhanuddin bhai Shaikh Husain bhai Mithiborwala", "roll": 29151}, {"id": "st_29170", "name": "Abdullah bhai Shaikh Qusai bhai Dalal", "roll": 29170}, {"id": "st_29174", "name": "Husain bhai Mohammed bhai Salim", "roll": 29174}, {"id": "st_29388", "name": "Abdulqadir bhai Yusuf bhai Bohra", "roll": 29388}], "1-B (Girls)": [{"id": "st_28916", "name": "Nafisa bai Shaikh Taher bhai Moaiyadi", "roll": 28916}, {"id": "st_28936", "name": "Zahra bai Shaikh Murtaza bhai Jamal", "roll": 28936}, {"id": "st_28937", "name": "Batul bai Shaikh Fakhruddin bhai Partapurwala", "roll": 28937}, {"id": "st_28943", "name": "Farida bai Yusuf bhai Mehmoodji", "roll": 28943}, {"id": "st_28957", "name": "Zahra bai Shaikh Shabbir bhai Khambaty", "roll": 28957}, {"id": "st_28976", "name": "Zahra bai Shaikh Shabbir bhai Kachwala", "roll": 28976}, {"id": "st_29000", "name": "Batul bai Moiz bhai Jawadwala", "roll": 29000}, {"id": "st_29006", "name": "Umaima bai Mulla Aqeel bhai Kapasi", "roll": 29006}, {"id": "st_29035", "name": "Husaina bai Alazhar bhai Barwaniwala", "roll": 29035}, {"id": "st_29061", "name": "Batul bai Mulla Hakimuddin bhai Ronaque", "roll": 29061}, {"id": "st_29086", "name": "Batul bai Murtaza bhai Rashid", "roll": 29086}, {"id": "st_29122", "name": "Tasneem bai Husain bhai Kherwala", "roll": 29122}, {"id": "st_29134", "name": "Nafisa bai Mulla Abdullah bhai Mamaji", "roll": 29134}, {"id": "st_29165", "name": "Batool bai Dawood bhai Lokandwala", "roll": 29165}, {"id": "st_29395", "name": "Zainab bai Aziz bhai Kanchwala", "roll": 29395}, {"id": "st_29407", "name": "Munira bai Aliasgar bhai Obriwala", "roll": 29407}, {"id": "st_29414", "name": "Batul bai Murtaza bhai Boot wala", "roll": 29414}], "2-A (Boys)": [{"id": "st_28543", "name": "Hasan bhai Mulla Abdulqadir bhai Rangoonwala", "roll": 28543}, {"id": "st_28567", "name": "Ammar bhai Malekulashter bhai Saifee", "roll": 28567}, {"id": "st_28595", "name": "Mustafa bhai Moiz bhai Charvawala", "roll": 28595}, {"id": "st_28609", "name": "Qusai bhai Mufaddal bhai Panarwala", "roll": 28609}, {"id": "st_28611", "name": "Burhanuddin bhai Murtaza bhai Moaiyadi", "roll": 28611}, {"id": "st_28612", "name": "Burhanuddin bhai Shabbir bhai Pipewala", "roll": 28612}, {"id": "st_28649", "name": "Abbas bhai Abdulqadir bhai Mullaji wala", "roll": 28649}, {"id": "st_28684", "name": "Mufaddal bhai Mulla Aliasgar bhai Vaghjipurwala", "roll": 28684}, {"id": "st_28692", "name": "Ammar bhai Shabbir bhai Vakharia", "roll": 28692}, {"id": "st_28706", "name": "Taher bhai Husain bhai Barwaniwala", "roll": 28706}, {"id": "st_28742", "name": "Aliasgar bhai Amiruddin bhai Manaqibwala", "roll": 28742}, {"id": "st_28744", "name": "Aliasgar bhai Mulla Murtaza bhai Unjhawala", "roll": 28744}, {"id": "st_28754", "name": "Mohammed bhai Hakimuddin bhai Sangamnerwala", "roll": 28754}, {"id": "st_28764", "name": "Juzar bhai Shabbir bhai Chunawala", "roll": 28764}, {"id": "st_28768", "name": "Mustansir bhai Shaikh Mansoor bhai Najmi", "roll": 28768}, {"id": "st_28782", "name": "Mustafa bhai Huzaifa bhai Arsiwala", "roll": 28782}, {"id": "st_28795", "name": "Shamoil bhai Shaikh Yusuf bhai Essajee", "roll": 28795}, {"id": "st_28819", "name": "Ammar bhai Aliasgar bhai Soni", "roll": 28819}, {"id": "st_28877", "name": "Taher bhai Shaikh Husain bhai Sabir", "roll": 28877}], "2-A (Girls)": [{"id": "st_28546", "name": "Ruqaiyah bai Mulla Mufaddal bhai Khandwala", "roll": 28546}, {"id": "st_28548", "name": "Insiyah bai Mulla Mufaddal bhai Madda", "roll": 28548}, {"id": "st_28583", "name": "Insiyah bai Mulla Hakimuddin bhai Ronaque", "roll": 28583}, {"id": "st_28666", "name": "Batul bai Mustafa bhai Kaka", "roll": 28666}, {"id": "st_28672", "name": "Rukaiya bai Yusufali bhai Hamid", "roll": 28672}, {"id": "st_28696", "name": "Naqiyah bai Shaikh Taher bhai Attari", "roll": 28696}, {"id": "st_28703", "name": "Husaina bai Burhanuddin bhai Gaswala", "roll": 28703}, {"id": "st_28725", "name": "Zainab bai Mulla Fakhruddin bhai Amin", "roll": 28725}, {"id": "st_28734", "name": "Insiyah bai Mulla Abdulqadir bhai Jabalpurwala", "roll": 28734}, {"id": "st_28736", "name": "Ruqaiya bai Murtaza bhai Haamid", "roll": 28736}, {"id": "st_28740", "name": "Sakina bai Mulla Mustafa bhai Baughwala", "roll": 28740}, {"id": "st_28748", "name": "Husaina bai Mufaddal bhai Lokhandwala", "roll": 28748}, {"id": "st_28765", "name": "Zainab bai Murtaza bhai Kanchwala", "roll": 28765}, {"id": "st_28771", "name": "Naqiyah bai Husain bhai Tailor", "roll": 28771}, {"id": "st_28791", "name": "Sakina bai Shaikh Huzaifa bhai Jamali", "roll": 28791}, {"id": "st_28792", "name": "Husaina bai Shaikh Huzaifa bhai Merchant", "roll": 28792}, {"id": "st_28800", "name": "Sakina bai Shabbirhusain bhai Husaini", "roll": 28800}, {"id": "st_28812", "name": "Alefiya bai Hatim bhai Patanwala", "roll": 28812}, {"id": "st_28833", "name": "Ruqaiyah bai Mulla Murtaza bhai Kanchwala", "roll": 28833}, {"id": "st_28900", "name": "Ummekulsum bai Huzaifa bhai Kathawala", "roll": 28900}], "2-B (Boys)": [{"id": "st_28554", "name": "Fakhruddin bhai Mulla Zainulabedeen bhai Sabir", "roll": 28554}, {"id": "st_28572", "name": "Aliasgar bhai Fakhruddin bhai Jalgunwala", "roll": 28572}, {"id": "st_28690", "name": "Hatim bhai Ebrahim bhai Saifee", "roll": 28690}, {"id": "st_28715", "name": "Abdeali bhai Mulla Shabbir bhai Najmi", "roll": 28715}, {"id": "st_28728", "name": "Hatim bhai Ghulamali bhai Saraf", "roll": 28728}, {"id": "st_28737", "name": "Miqdad bhai Shaikh Shabbir bhai Liliyawala", "roll": 28737}, {"id": "st_28747", "name": "Husain bhai Mulla Murtaza bhai Rubywala", "roll": 28747}, {"id": "st_28756", "name": "Murtaza bhai Mulla Husain bhai Charniwala", "roll": 28756}, {"id": "st_28763", "name": "Abdullah bhai Mohammed bhai Badri", "roll": 28763}, {"id": "st_28772", "name": "Shabbir bhai Husain bhai Guru", "roll": 28772}, {"id": "st_28802", "name": "Mansoor bhai Aziz bhai Kapadia", "roll": 28802}, {"id": "st_28804", "name": "Mustafa bhai Yusuf bhai Gandhi", "roll": 28804}, {"id": "st_28807", "name": "Murtaza bhai Yusuf bhai Lokhandwala", "roll": 28807}, {"id": "st_28815", "name": "Husain bhai Qaidjoher bhai Nawab", "roll": 28815}, {"id": "st_28842", "name": "Mohammed bhai Mulla Ammar bhai Fahim", "roll": 28842}, {"id": "st_28875", "name": "Burhanuddin bhai Shaikh Mohammed bhai Ezzy (Barwahawala)", "roll": 28875}, {"id": "st_28876", "name": "Mustansir bhai Shaikh Aliasgar bhai Dohadwala", "roll": 28876}, {"id": "st_28880", "name": "Shabbir bhai Mohammed bhai Bagwan", "roll": 28880}], "2-B (Girls)": [{"id": "st_28596", "name": "Alifiya bai Abbas bhai Bardanwala", "roll": 28596}, {"id": "st_28655", "name": "Sakina bai Husain bhai Cyeclewala", "roll": 28655}, {"id": "st_28663", "name": "Mariya bai Mustafa bhai Charwawala", "roll": 28663}, {"id": "st_28686", "name": "Batool bai Shaikh Aliasgar bhai Godhrawala", "roll": 28686}, {"id": "st_28716", "name": "Batul bai Mulla Huzaifa bhai Shujai", "roll": 28716}, {"id": "st_28719", "name": "Fatema bai Mohammed bhai Hardawala", "roll": 28719}, {"id": "st_28726", "name": "Ajab bai Saifuddin bhai Palitanawala", "roll": 28726}, {"id": "st_28743", "name": "Tasneem bai Mansoor bhai Photographer", "roll": 28743}, {"id": "st_28745", "name": "Amatullah bai Mulla Qusai bhai Chahwala", "roll": 28745}, {"id": "st_28750", "name": "Jumana bai Ibrahim bhai Agarwala", "roll": 28750}, {"id": "st_28769", "name": "Insiya bai Mulla Yusuf bhai Raja", "roll": 28769}, {"id": "st_28789", "name": "Fatema bai Shaikh Murtaza bhai Chataiwala", "roll": 28789}, {"id": "st_28790", "name": "Fatema bai Murtaza bhai Kapadia", "roll": 28790}, {"id": "st_28796", "name": "Zainab bai Taher bhai Galib", "roll": 28796}, {"id": "st_28801", "name": "Ruqaiyyah bai Shaikh Hussain bhai Hyderabadwala", "roll": 28801}, {"id": "st_28809", "name": "Jamila bai Mulla Mohammed bhai Saifee", "roll": 28809}, {"id": "st_28824", "name": "Zainab bai Shaikh Aliasgar bhai Adenwala", "roll": 28824}, {"id": "st_28853", "name": "Fatema bai Shaikh Mustafa bhai Lokhandwala", "roll": 28853}, {"id": "st_28899", "name": "Hussaina bai Mustafa bhai Jamnagarwala", "roll": 28899}, {"id": "st_28901", "name": "Batul bai Adnan bhai Vazirbun", "roll": 28901}], "3-A (Boys)": [{"id": "st_28146", "name": "Husain bhai Shaikh Burhanuddin bhai Lunawadawala", "roll": 28146}, {"id": "st_28147", "name": "Husain bhai Mulla Aziz bhai Kothawala", "roll": 28147}, {"id": "st_28171", "name": "Murtaza bhai Najmuddin bhai Maheshwarwala", "roll": 28171}, {"id": "st_28173", "name": "Mustafa bhai Najmuddin bhai Rangoonwala", "roll": 28173}, {"id": "st_28199", "name": "Yusuf bhai Shaikh Aliasgar bhai Calcuttawala", "roll": 28199}, {"id": "st_28202", "name": "Hatim bhai Abdulqadir bhai Jamali", "roll": 28202}, {"id": "st_28204", "name": "Abdulqadir bhai Juzer bhai Kapasi (Cochinwala)", "roll": 28204}, {"id": "st_28206", "name": "Mustafa bhai Shaikh Huzaifa bhai Dungarpurwala", "roll": 28206}, {"id": "st_28215", "name": "Murtaza bhai Hakimuddin bhai Tinwala", "roll": 28215}, {"id": "st_28255", "name": "Ibrahim bhai Hakimuddin bhai Hakimi", "roll": 28255}, {"id": "st_28262", "name": "Khadir bhai Shaikh Aliakbar bhai Mithawala", "roll": 28262}, {"id": "st_28267", "name": "Ilyas bhai Juzer bhai Kagdi", "roll": 28267}, {"id": "st_28293", "name": "Hatim bhai Shaikh Abbas bhai Mithiborwala", "roll": 28293}, {"id": "st_28299", "name": "Husain bhai Huzaifa bhai Khandwawla", "roll": 28299}, {"id": "st_28318", "name": "Aliakbar bhai Saifuddin bhai Ujjainwala", "roll": 28318}, {"id": "st_28344", "name": "Adnan bhai Shaikh Abdulhasnein bhai Unwala", "roll": 28344}, {"id": "st_28379", "name": "Burhanuddin bhai Shaikh Aliasger bhai Al Anwar", "roll": 28379}, {"id": "st_28380", "name": "Taha bhai Mulla Husain bhai Berberawalla", "roll": 28380}, {"id": "st_28439", "name": "Huzaifa bhai Shaikh Adnan bhai Aamir", "roll": 28439}, {"id": "st_28535", "name": "Taher bs Aliasghar bs Khedir bs", "roll": 28535}, {"id": "st_28681", "name": "Mohammed bs Taikhoom bs Mohiyuddin", "roll": 28681}, {"id": "st_29417", "name": "Ibrahim bs Adnan bs Husain", "roll": 29417}], "3-A (Girls)": [{"id": "st_28141", "name": "Farida bai Mulla Mufaddal bhai Patanwala", "roll": 28141}, {"id": "st_28166", "name": "Insiyah bai Moiz bhai Electricwala", "roll": 28166}, {"id": "st_28168", "name": "Zahra bai Shaikh Ammar bhai Kapadia", "roll": 28168}, {"id": "st_28169", "name": "Mariyah bai Mulla Abbas bhai Saifee", "roll": 28169}, {"id": "st_28208", "name": "Alefiyah bai Mulla Huzaifa bhai Izzy", "roll": 28208}, {"id": "st_28219", "name": "Amatullah bai Kumail bhai Tohfafarosh", "roll": 28219}, {"id": "st_28249", "name": "Tasneem bai Taha bhai Bari wala", "roll": 28249}, {"id": "st_28260", "name": "Arwa bai Abduttayyeb bhai Shibaam", "roll": 28260}, {"id": "st_28280", "name": "Alefiyah bai Murtaza bhai Godhrawala", "roll": 28280}, {"id": "st_28309", "name": "Ummekulsum bai Murtaza bhai Bhopalwala", "roll": 28309}, {"id": "st_28323", "name": "Fatema bai Shaikh Juzer bhai Boriwala", "roll": 28323}, {"id": "st_28324", "name": "Munira bai Taher bhai Khedwala", "roll": 28324}, {"id": "st_28332", "name": "Tasneem bai Juzer bhai Badami", "roll": 28332}, {"id": "st_28382", "name": "Samina bai Aliasgar bhai Rangwala", "roll": 28382}, {"id": "st_28411", "name": "Maryam bai Murtaza bhai Jariwala", "roll": 28411}, {"id": "st_28425", "name": "Rukaiya bai Husain bhai Khorakiwala", "roll": 28425}, {"id": "st_28431", "name": "Alefiyah bai Husain bhai Songadhwala", "roll": 28431}, {"id": "st_28433", "name": "Ruqaiyah bai Taher bhai Gharakiyawala", "roll": 28433}, {"id": "st_28491", "name": "Tasneem bai Huzaifa bhai Hirani", "roll": 28491}, {"id": "st_28536", "name": "Hawwa bs Shabbir bs Quresh bs", "roll": 28536}, {"id": "st_28897", "name": "Shirin bs Taher bs Husamuddin", "roll": 28897}], "3-B (Boys)": [{"id": "st_28153", "name": "Taikhoom bhai Mulla Mustafa bhai Tapia", "roll": 28153}, {"id": "st_28181", "name": "Taha bhai Mulla Murtaza bhai Indorewala", "roll": 28181}, {"id": "st_28186", "name": "Abdulqadir bhai Mulla Murtaza bhai Primaswala", "roll": 28186}, {"id": "st_28194", "name": "Abdeali bhai Quraish bhai Raj", "roll": 28194}, {"id": "st_28201", "name": "Taher bhai Mufaddal bhai Motorwala", "roll": 28201}, {"id": "st_28230", "name": "Murtaza bhai Khozema bhai Rangwala", "roll": 28230}, {"id": "st_28237", "name": "Abbas bhai Zainulabedeen bhai Vadgamwala", "roll": 28237}, {"id": "st_28245", "name": "Murtaza bhai Mulla Huzaifa bhai Durriewala", "roll": 28245}, {"id": "st_28253", "name": "Aliasgar bhai Shaikh Ammar bhai Hyderabadwala", "roll": 28253}, {"id": "st_28259", "name": "Haider bhai Aliasgar bhai Shakir", "roll": 28259}, {"id": "st_28274", "name": "Saifuddin bhai Husain bhai Amreliwala", "roll": 28274}, {"id": "st_28287", "name": "Husain bhai Khuzaima bhai Balti wala", "roll": 28287}, {"id": "st_28292", "name": "Qusai bhai Murtaza bhai Khandwawala", "roll": 28292}, {"id": "st_28301", "name": "Aliasgar bhai Murtaza bhai Hajuri", "roll": 28301}, {"id": "st_28312", "name": "Alaqmar bhai Aliasgar bhai Arif", "roll": 28312}, {"id": "st_28325", "name": "Aziz bhai Qusai bhai Kagalwala", "roll": 28325}, {"id": "st_28336", "name": "Aliasgar bhai Husain bhai Khamgaonwala", "roll": 28336}, {"id": "st_28364", "name": "Mohammed bhai Qutbuddin bhai Patanpurawala", "roll": 28364}, {"id": "st_28365", "name": "Aamir bhai Shaikh Mufaddal bhai Shakir", "roll": 28365}, {"id": "st_28427", "name": "Husain bhai Shaikh Murtaza bhai Attarwala", "roll": 28427}], "3-B (Girls)": [{"id": "st_28148", "name": "Radiyah bai Yusufali bhai Saifee", "roll": 28148}, {"id": "st_28150", "name": "Ruqaiyah bai Mohammed bhai Shakir", "roll": 28150}, {"id": "st_28154", "name": "Tasneem bai Mulla Shabbir bhai Cochinwala", "roll": 28154}, {"id": "st_28162", "name": "Jumana bai Mulla Husain bhai Poonawalla", "roll": 28162}, {"id": "st_28163", "name": "Naqiyah bai Shaikh Adnan bhai Kapadia", "roll": 28163}, {"id": "st_28164", "name": "Zahra bai Abbas bhai Rangoonwala", "roll": 28164}, {"id": "st_28192", "name": "Farida bai Shaikh Abdeabiturab bhai Rangwala", "roll": 28192}, {"id": "st_28195", "name": "Batul bai Hasnain bhai Motiwala", "roll": 28195}, {"id": "st_28203", "name": "Umaima bai Murtaza bhai Thekedar", "roll": 28203}, {"id": "st_28212", "name": "Sakina bai Murtaza bhai Electricwala", "roll": 28212}, {"id": "st_28223", "name": "Arwa bai Mustansir bhai Nagdawala", "roll": 28223}, {"id": "st_28266", "name": "Rashida bai Idris bhai Ghia", "roll": 28266}, {"id": "st_28272", "name": "Zahabiyah bai Moiz bhai Dawasaz", "roll": 28272}, {"id": "st_28302", "name": "Zahabiyah bai Moizali bhai Cyclewala", "roll": 28302}, {"id": "st_28307", "name": "Naqiyah bai Aliasgar bhai Badri", "roll": 28307}, {"id": "st_28381", "name": "Amatullah bai Quraish bhai Bhaidjy", "roll": 28381}, {"id": "st_28394", "name": "Batul bai Shujauddin bhai Saktelewala", "roll": 28394}, {"id": "st_28399", "name": "Jamila bn Mustafa bh Badri", "roll": 28399}, {"id": "st_28428", "name": "Batul bai Mulla Aziz bhai Ahmedabadwala", "roll": 28428}, {"id": "st_28460", "name": "Munira bai Mulla Abdulqadir bhai Johar", "roll": 28460}], "3-C (Girls)": [{"id": "st_28160", "name": "Jumana bai Shaikh Murtaza bhai Rangwala", "roll": 28160}, {"id": "st_28165", "name": "Insiyah bai Shaikh Taher bhai Moaiyadi", "roll": 28165}, {"id": "st_28176", "name": "Rashida bai Mustafa bhai Chhabrawala", "roll": 28176}, {"id": "st_28183", "name": "Fatema bai Yusuf bhai Khorakiwala", "roll": 28183}, {"id": "st_28187", "name": "Insiyah bai Murtaza bhai Badri", "roll": 28187}, {"id": "st_28196", "name": "Arwa bai Murtaza bhai Rangoonwala", "roll": 28196}, {"id": "st_28258", "name": "Sakina bai Mulla Huzaifa bhai Kachwala", "roll": 28258}, {"id": "st_28271", "name": "Khadija bai Hatim bhai Jambura", "roll": 28271}, {"id": "st_28275", "name": "Sakina bai Ibrahim bhai Sewa", "roll": 28275}, {"id": "st_28289", "name": "Jumana bai Murtaza bhai Motarwala", "roll": 28289}, {"id": "st_28296", "name": "Farida bai Shaikh Mustafa bhai Shakir", "roll": 28296}, {"id": "st_28300", "name": "Zainab bai Mulla Abdulqadir bhai Poonawala", "roll": 28300}, {"id": "st_28303", "name": "Zahra bai Mustafa bhai Madarwala", "roll": 28303}, {"id": "st_28322", "name": "Insiyah bs Khuzaima bs Taiyebi", "roll": 28322}, {"id": "st_28345", "name": "Hawra bai Huzaifa bhai Pumpwala", "roll": 28345}, {"id": "st_28414", "name": "Fizzah bai Shaikh Huzaifa bhai Badani", "roll": 28414}, {"id": "st_28424", "name": "Sakina bai Mulla Hakimuddin bhai Rafique", "roll": 28424}, {"id": "st_28426", "name": "Amena bai Aziz bhai Tambawala", "roll": 28426}, {"id": "st_28459", "name": "Zahra bai Burhan bhai Kapadia", "roll": 28459}, {"id": "st_28472", "name": "Sakina bai Shabbir bhai Mujpurwala", "roll": 28472}], "4-A (Boys)": [{"id": "st_27746", "name": "Huzaifa bhai Mulla Mustafa bhai Rangwala", "roll": 27746}, {"id": "st_27749", "name": "Mufaddal bhai Moiz bhai Qutbi", "roll": 27749}, {"id": "st_27751", "name": "Huzaifa bhai Mulla Murtaza bhai Ali (Shajapurwala)", "roll": 27751}, {"id": "st_27770", "name": "Mustansir bhai Mohammed bhai Unwala", "roll": 27770}, {"id": "st_27807", "name": "Huzaifa bhai Shaikh Mustafa bhai Shakir", "roll": 27807}, {"id": "st_27814", "name": "Hatim bhai Murtaza bhai Dharwala", "roll": 27814}, {"id": "st_27850", "name": "Yusuf bhai Abdulqadir bhai Shakir", "roll": 27850}, {"id": "st_27889", "name": "Hasan bhai Hussain bhai Kikali", "roll": 27889}, {"id": "st_27904", "name": "Husain bhai Shaikh Qusai bhai Malindiwala", "roll": 27904}, {"id": "st_27907", "name": "Ibrahim bhai Shaikh Husain bhai Shaiwala", "roll": 27907}, {"id": "st_27950", "name": "Abizer bhai Mulla Murtaza bhai Zainy", "roll": 27950}, {"id": "st_27953", "name": "Taher bhai Shaikh Murtaza bhai Master", "roll": 27953}, {"id": "st_27957", "name": "Ghulamabbas bhai Abdeali bhai Vilayati", "roll": 27957}, {"id": "st_28011", "name": "Taikhoom bhai Aqeel bhai Vimawala", "roll": 28011}, {"id": "st_28014", "name": "Murtaza bhai Mulla Huzaifa bhai Noble", "roll": 28014}, {"id": "st_28017", "name": "Hamza bhai Murtaza bhai Jariwala", "roll": 28017}, {"id": "st_28034", "name": "Abbas bhai Husain bhai Merchant", "roll": 28034}, {"id": "st_28036", "name": "Mohammed bhai Shabbir bhai Bagasrawala", "roll": 28036}, {"id": "st_28042", "name": "Juzer bhai Yusuf bhai Raniwala", "roll": 28042}, {"id": "st_28057", "name": "Husain bhai Yusuf bhai Alirajpurwala", "roll": 28057}, {"id": "st_28068", "name": "Mustafa bhai Huzaifa bhai Sabuwala", "roll": 28068}, {"id": "st_28680", "name": "Huzaifa bs Alazhar bs Nooruddin", "roll": 28680}], "4-A (Girls)": [{"id": "st_27738", "name": "Husaina bai Mulla Mufaddal bhai Khandwala", "roll": 27738}, {"id": "st_27773", "name": "Alefiyah bai Firoz bhai Jariwala", "roll": 27773}, {"id": "st_27790", "name": "Tahera bai Fakhruddin bhai Mukadam", "roll": 27790}, {"id": "st_27791", "name": "Jamila bai Shaikh Husain bhai Chechatwala", "roll": 27791}, {"id": "st_27801", "name": "Mariyah bai Shaikh Husain bhai Pardawala", "roll": 27801}, {"id": "st_27848", "name": "Zahabiyah bai Shaikh Husain bhai Pratapgarhwala", "roll": 27848}, {"id": "st_27897", "name": "Rashida bai Shaikh Haider bhai Blue", "roll": 27897}, {"id": "st_27925", "name": "Sarrah bai Mulla Ebrahim bhai Attarwala", "roll": 27925}, {"id": "st_27938", "name": "Khadija bai Murtaza bhai Kaukawala", "roll": 27938}, {"id": "st_27971", "name": "Husaina bai Shaikh Mukarram bhai Stovewala", "roll": 27971}, {"id": "st_28010", "name": "Amatullah bai Murtaza bhai Dabhoiwala", "roll": 28010}, {"id": "st_28013", "name": "Zainab bai Mulla Husain bhai Dungarpurwala", "roll": 28013}, {"id": "st_28022", "name": "Zainab bai Firoz bhai Habib", "roll": 28022}, {"id": "st_28025", "name": "Insiyah bai Husain bhai Zariwala", "roll": 28025}, {"id": "st_28060", "name": "Fatematussugra bai Mulla Mustafa bhai Dhankot", "roll": 28060}, {"id": "st_28075", "name": "Batul bai Burhanuddin bhai Limadiawala", "roll": 28075}, {"id": "st_28081", "name": "Tasneem bai Husain bhai Dhoondia", "roll": 28081}, {"id": "st_28083", "name": "Arwa bai Fakhruddin bhai Burhani", "roll": 28083}, {"id": "st_28084", "name": "Fatema bai Mulla Taher bhai Latif", "roll": 28084}, {"id": "st_28135", "name": "Jumana bs Abduttayyib bs Shz Vajihuddin Saheb", "roll": 28135}], "4-B (Boys)": [{"id": "st_27747", "name": "Husain bhai Mulla Hasan bhai Qutbi", "roll": 27747}, {"id": "st_27767", "name": "Murtaza bhai Mulla Huzaifa bhai Ghoghari", "roll": 27767}, {"id": "st_27777", "name": "Juzer bhai Mulla Shabbir bhai Khambati", "roll": 27777}, {"id": "st_27781", "name": "Hasan bhai Shaikh Shabbir bhai Madarwala", "roll": 27781}, {"id": "st_27782", "name": "Mustafa bhai Shaikh Mustansir bhai Khandwala", "roll": 27782}, {"id": "st_27816", "name": "Aliasgar bhai Shaikh Mufaddal bhai Shakir", "roll": 27816}, {"id": "st_27825", "name": "Mustafa bhai Husain bhai Simalwada", "roll": 27825}, {"id": "st_27833", "name": "Ibrahim bhai Abbas bhai Tinwala", "roll": 27833}, {"id": "st_27849", "name": "Taher bhai Adnan bhai Kader rasiyaji", "roll": 27849}, {"id": "st_27872", "name": "Burhanuddin bhai Aliasgar bhai Khargonwala", "roll": 27872}, {"id": "st_27876", "name": "Abbas bhai Shaikh Burhanuddin bhai Shujaii", "roll": 27876}, {"id": "st_27911", "name": "Yusuf bhai Mulla Murtaza bhai Maimoon", "roll": 27911}, {"id": "st_27917", "name": "Mufaddal bhai Mulla Huzaifa bhai Vohra", "roll": 27917}, {"id": "st_27933", "name": "Idris bhai Ezzuddin bhai Burhani", "roll": 27933}, {"id": "st_27935", "name": "Taher bhai Murtaza bhai Trunkwala", "roll": 27935}, {"id": "st_27951", "name": "Husain bh Murtaza bs Taiyebi", "roll": 27951}, {"id": "st_27955", "name": "Mustafa bhai Mulla Murtaza bhai Jamali", "roll": 27955}, {"id": "st_28006", "name": "Taha bhai Mulla Mufaddal bhai Attar", "roll": 28006}, {"id": "st_28018", "name": "Adnan bhai Mulla Mufaddal bhai Gheewala", "roll": 28018}, {"id": "st_28026", "name": "Mansoor bhai Aliasgar bhai Tel wala", "roll": 28026}, {"id": "st_70220", "name": "Burhanuddin bhai Shaikh Shabbir bhai Jabali", "roll": 70220}], "4-B (Girls)": [{"id": "st_27745", "name": "Khadija bai Mulla Husain bhai Zakir", "roll": 27745}, {"id": "st_27766", "name": "Fatema bai Mulla Moiz bhai Chhatariya", "roll": 27766}, {"id": "st_27774", "name": "Sakina bai Husain bhai Bharmal", "roll": 27774}, {"id": "st_27788", "name": "Zahra bai Shaikh Mufaddal bhai Qamari", "roll": 27788}, {"id": "st_27799", "name": "Insiyah bai Khuzaima bhai Poolwala", "roll": 27799}, {"id": "st_27821", "name": "Jumana bai Mulla Yusuf bhai Patanwala", "roll": 27821}, {"id": "st_27864", "name": "Ruqaiyah bai Moiz bhai Electricwala", "roll": 27864}, {"id": "st_27900", "name": "Sarrah bai Mulla Husain bhai Shajapurwala", "roll": 27900}, {"id": "st_27908", "name": "Naamah bai Shaikh Juzer bhai Godhrawala", "roll": 27908}, {"id": "st_27920", "name": "Arwa bai Ibrahim bhai Machhli wala", "roll": 27920}, {"id": "st_27929", "name": "Maryam bai Abbas bhai Hamid", "roll": 27929}, {"id": "st_28019", "name": "Sakina bai Mulla Huzaifa bhai Johar", "roll": 28019}, {"id": "st_28029", "name": "Hawra bai Shaikh Husain bhai ezzi", "roll": 28029}, {"id": "st_28076", "name": "Batul bai Huzaifa bhai Badshah", "roll": 28076}, {"id": "st_28082", "name": "Husena bai Yusuf bhai Mujpurwala", "roll": 28082}, {"id": "st_28085", "name": "Ruqaiyah bai Khuzaima bhai Burhanpurwala", "roll": 28085}, {"id": "st_28086", "name": "Fatema bai Hakimuddin bhai Bhatia", "roll": 28086}, {"id": "st_28087", "name": "Khadija bai Murtaza bhai Nulwala", "roll": 28087}, {"id": "st_28126", "name": "Sakina bai Mustafa bhai Khumanpurwala", "roll": 28126}], "4-C (Girls)": [{"id": "st_27780", "name": "Tasneem bai Abbas bhai Chooriwala", "roll": 27780}, {"id": "st_27785", "name": "Batul bai Shaikh Khuzaima bhai Jeeruwala", "roll": 27785}, {"id": "st_27800", "name": "Sakina bai Mufaddal bhai Dhanerawala", "roll": 27800}, {"id": "st_27818", "name": "Ummehani bai Mulla Saifuddin bhai Rangwala", "roll": 27818}, {"id": "st_27857", "name": "Jamila bai Yusuf bhai Dahodwala", "roll": 27857}, {"id": "st_27859", "name": "Insiya bai Huzaifa bhai Sirohiwala", "roll": 27859}, {"id": "st_27862", "name": "Jamila bai Mulla Abdulqadir bhai Sanjeliwala", "roll": 27862}, {"id": "st_27873", "name": "Maryam bai Qutbuddin bhai Habib", "roll": 27873}, {"id": "st_27934", "name": "Sakina bai Juzer bhai Bharmal", "roll": 27934}, {"id": "st_27939", "name": "Batul bai Adam bhai Desaiwala", "roll": 27939}, {"id": "st_27948", "name": "Sakina bai Murtaza bhai Chakkiwala", "roll": 27948}, {"id": "st_27975", "name": "Sakina bai Shaikh Shabbir bhai Kachwala", "roll": 27975}, {"id": "st_27998", "name": "Fatema bn Mudar bs Zainee", "roll": 27998}, {"id": "st_28035", "name": "Nafisa bai Shaikh Yusuf bhai Badri", "roll": 28035}, {"id": "st_28041", "name": "Insiyah bai Kutbuddin bhai Bandookwala", "roll": 28041}, {"id": "st_28067", "name": "Nafisa bai Shaikh Abdeali bhai Bhanpurawala", "roll": 28067}, {"id": "st_28077", "name": "Husaina bai Murtaza bhai Khambhatwala", "roll": 28077}, {"id": "st_28090", "name": "Mubaraka bai Shaikh Abdulhasnein bhai Unwala", "roll": 28090}], "5-A (Boys)": [{"id": "st_27319", "name": "Mufaddal bhai Juzer bhai Bharmal", "roll": 27319}, {"id": "st_27361", "name": "Abdemanaf bhai Shaikh Aliakbar bhai Attar", "roll": 27361}, {"id": "st_27370", "name": "Taher bhai Mulla Zohair bhai Qamari", "roll": 27370}, {"id": "st_27383", "name": "Shabbir bhai Husain bhai Saifee", "roll": 27383}, {"id": "st_27390", "name": "Raj bhai Murtaza bhai Merchant", "roll": 27390}, {"id": "st_27427", "name": "Hatim bhai Murtaza bhai Hirani", "roll": 27427}, {"id": "st_27431", "name": "Mustansir bhai Mohammed bhai Baroodwala", "roll": 27431}, {"id": "st_27433", "name": "Aliasgar bhai Huzaifa bhai Bumwala", "roll": 27433}, {"id": "st_27471", "name": "Adnan bhai Hakim bhai Nampurwala", "roll": 27471}, {"id": "st_27505", "name": "Husain bhai Qutbuddin bhai Adib", "roll": 27505}, {"id": "st_27506", "name": "Taher bhai Shaikh Huzaifa bhai Badri", "roll": 27506}, {"id": "st_27508", "name": "Malekulashter bhai Hatim bhai Moriswala", "roll": 27508}, {"id": "st_27555", "name": "Aziz bhai Qutbuddin bhai Molvi", "roll": 27555}, {"id": "st_27581", "name": "Huzaifa bhai Yusufali bhai Lokhandwala", "roll": 27581}, {"id": "st_27599", "name": "Yusuf bhai Murtaza bhai Hamid", "roll": 27599}, {"id": "st_27608", "name": "Behlah bh Murtaza bs Mohammadi", "roll": 27608}, {"id": "st_27621", "name": "Shabbir bhai Taher bhai Mallajiwala", "roll": 27621}, {"id": "st_27631", "name": "Burhanuddin bhai Mufaddal bhai Kacheriwala", "roll": 27631}, {"id": "st_27636", "name": "Husain bhai Mulla Mustafa bhai Khamgaonwala", "roll": 27636}, {"id": "st_27693", "name": "Aliasghar bhai Husain bhai Dayawala", "roll": 27693}, {"id": "st_28136", "name": "Husain bs Alaqmar bs Dawood", "roll": 28136}, {"id": "st_28137", "name": "Juzer bs Mufaddal bs Haamid", "roll": 28137}], "5-A (Girls)": [{"id": "st_27367", "name": "Sarrah bai Mulla Mufaddal bhai Madda", "roll": 27367}, {"id": "st_27385", "name": "Fatema bai Mohammed bhai Qutbi", "roll": 27385}, {"id": "st_27394", "name": "Ummehani bai Shaikh Shabbir bhai Dohadwala", "roll": 27394}, {"id": "st_27400", "name": "Mariyah bai Shaikh Abbas bhai Dhandhukawala", "roll": 27400}, {"id": "st_27418", "name": "Hawra bai Husain bhai Mundwada Wala", "roll": 27418}, {"id": "st_27425", "name": "Sakina bai Murtazaali bhai Hakim ji wala", "roll": 27425}, {"id": "st_27466", "name": "Zainab bai Shaikh Kumail bhai Raj", "roll": 27466}, {"id": "st_27469", "name": "Nafisa bai Shaikh Moiz bhai Nagpurwala", "roll": 27469}, {"id": "st_27473", "name": "Zahra bai Huzaifa bhai Mushtaq", "roll": 27473}, {"id": "st_27475", "name": "Zainab bai Mulla Juzer bhai Lokhandwala", "roll": 27475}, {"id": "st_27485", "name": "Sakina bai Murtaza bhai Baghwala", "roll": 27485}, {"id": "st_27488", "name": "Insiyah bai Burhanuddin bhai Shujalpurwala", "roll": 27488}, {"id": "st_27489", "name": "Sakina bai Ibrahim bhai Chechatwala", "roll": 27489}, {"id": "st_27492", "name": "Rashida bai Abbasali bhai Rokadya wala", "roll": 27492}, {"id": "st_27504", "name": "Khadija bai Mulla Mohammed bhai Soni", "roll": 27504}, {"id": "st_27516", "name": "Rashida bai Mulla Murtaza bhai Bhanpurawala", "roll": 27516}, {"id": "st_27560", "name": "Ummekulsum bai Shabbir bhai Motabhai", "roll": 27560}, {"id": "st_27567", "name": "Insiyah bai Shaikh Aliasgar bhai Samiwala", "roll": 27567}, {"id": "st_27586", "name": "Fatema bai Shaikh Aziz bhai Rashid", "roll": 27586}, {"id": "st_28534", "name": "Umaima bs Maad bs Ezzy", "roll": 28534}], "5-B (Boys)": [{"id": "st_27365", "name": "Huzaifa bhai Shaikh Juzer bhai Hamid", "roll": 27365}, {"id": "st_27374", "name": "Malekulashter bhai Shaikh Adnan bhai Jamali", "roll": 27374}, {"id": "st_27392", "name": "Juzer bhai Moiz bhai Ezzy", "roll": 27392}, {"id": "st_27396", "name": "Kumail bhai Murtaza bhai Manawarwala", "roll": 27396}, {"id": "st_27432", "name": "Taher bhai Shaikh Murtaza bhai Chopdawala", "roll": 27432}, {"id": "st_27436", "name": "Hatim bhai Husain bhai Kolsawala", "roll": 27436}, {"id": "st_27439", "name": "Shabbir bhai Mustafa bhai Chhatarpurwala", "roll": 27439}, {"id": "st_27462", "name": "Husain bhai Huzaifa bhai Sunely", "roll": 27462}, {"id": "st_27476", "name": "Husain bhai Aziz bhai Phaltanwala", "roll": 27476}, {"id": "st_27486", "name": "Husain bhai Shaikh Burhanuddin bhai Jamali", "roll": 27486}, {"id": "st_27507", "name": "Mustafa bhai Hakimuddin bhai Rampurawala", "roll": 27507}, {"id": "st_27541", "name": "Mufaddal bhai Shaikh Huzaifa bhai Goryawala", "roll": 27541}, {"id": "st_27543", "name": "Taher bhai Qaidjoher bhai Ramgadh", "roll": 27543}, {"id": "st_27546", "name": "Burhanuddin bhai Mustafa bhai Nathdwara", "roll": 27546}, {"id": "st_27558", "name": "Aliasgar bhai Husain bhai Tinwala", "roll": 27558}, {"id": "st_27562", "name": "Burhanuddin bhai Aliakbar bhai Vohra", "roll": 27562}, {"id": "st_27591", "name": "Qusai bhai Taher bhai Pata", "roll": 27591}, {"id": "st_27727", "name": "Huzaifa bhai Mohammadhussain bhai Bankoda", "roll": 27727}, {"id": "st_27729", "name": "Lamak bhai Mulla Burhanuddin bhai Taranawala", "roll": 27729}, {"id": "st_70206", "name": "Ahmed bhai Khuzaima bhai Hakimi", "roll": 70206}, {"id": "st_70212", "name": "Mohammed bhai Mulla Huzaifa bhai Khandwawala", "roll": 70212}, {"id": "st_70221", "name": "Murtaza bhai Shabbir bhai Javawala", "roll": 70221}], "5-B (Girls)": [{"id": "st_27382", "name": "Sakina bai Mulla Aziz bhai Rampurawala", "roll": 27382}, {"id": "st_27405", "name": "Sakina bai Mulla Husain bhai Amin", "roll": 27405}, {"id": "st_27417", "name": "Aarefa bai Shaikh Murtaza bhai Madraswala", "roll": 27417}, {"id": "st_27422", "name": "Hawra bai Shaikh Mufaddal bhai Badri", "roll": 27422}, {"id": "st_27429", "name": "Umme Salama bai Husain bhai Bharmal", "roll": 27429}, {"id": "st_27438", "name": "Mariyah bai Mubashir bhai Khumusi", "roll": 27438}, {"id": "st_27479", "name": "Insiyah bai Shabbir bhai Cyclewala", "roll": 27479}, {"id": "st_27482", "name": "Samina bai Taher bhai Jamali", "roll": 27482}, {"id": "st_27496", "name": "Ummeayman bai Shaikh Quaidjohar bhai Diwan", "roll": 27496}, {"id": "st_27524", "name": "Zahra bai Mulla Yusuf bhai Hamidi", "roll": 27524}, {"id": "st_27536", "name": "Ummehani bai Shaikh Adnan bhai Kapadia", "roll": 27536}, {"id": "st_27539", "name": "Husaina bai Shaikh Yusuf bhai Kanchwala", "roll": 27539}, {"id": "st_27547", "name": "Husaina bai Burhanuddin bhai Munimji", "roll": 27547}, {"id": "st_27587", "name": "Nafisa bai Shaikh Behlah bhai Ayman", "roll": 27587}, {"id": "st_27600", "name": "Zainab bn Abdulqadir bh Moiny", "roll": 27600}, {"id": "st_27607", "name": "Husaina bai Shaikh Mustafa bhai Shakir", "roll": 27607}, {"id": "st_27617", "name": "Insiyah bai Shaikh Najmuddin bhai Saifee", "roll": 27617}, {"id": "st_27623", "name": "Arwa bai Aliasgar bhai Modi", "roll": 27623}, {"id": "st_27656", "name": "Zainab bai Mustafa bhai Nawab", "roll": 27656}, {"id": "st_27708", "name": "Insiyah bai Shaikh Murtaza bhai Barbhaiwala", "roll": 27708}], "6-A (Boys)": [{"id": "st_26921", "name": "Aliasgar bs Alazhar bs Nooruddin", "roll": 26921}, {"id": "st_27064", "name": "Mulla Mufaddal bhai Shaikh Husain bhai Gari", "roll": 27064}, {"id": "st_27084", "name": "Mulla Haider bhai Taher bhai Shikla", "roll": 27084}, {"id": "st_27093", "name": "Mulla Abduttayyeb bhai Mufaddal bhai Mukhia", "roll": 27093}, {"id": "st_27097", "name": "Mulla Burhanuddin bhai Mulla Husain bhai Siyami", "roll": 27097}, {"id": "st_27131", "name": "Mulla Ibrahim bhai Shaikh Khuzaima bhai Shakir", "roll": 27131}, {"id": "st_27137", "name": "Mulla Mustafa bhai Shaikh Huzaifa bhai Shakir", "roll": 27137}, {"id": "st_27157", "name": "Mulla Shamoel bhai Ibrahimali bhai Bohra", "roll": 27157}, {"id": "st_27189", "name": "Mulla Husain bhai Yusufali bhai Chechat wala", "roll": 27189}, {"id": "st_27234", "name": "Taikhoom bhai Shaikh Abdeabiturab bhai Rangwala", "roll": 27234}, {"id": "st_27248", "name": "Taher bh Idris bs Zakir", "roll": 27248}, {"id": "st_27276", "name": "Mulla Yusuf bhai Ibrahim bhai Patanwala", "roll": 27276}, {"id": "st_27277", "name": "Mulla Mufaddal bhai Moiz bhai Bakriwala", "roll": 27277}, {"id": "st_27282", "name": "Mulla Huzaifa bhai Shaikh Aliasgar bhai Madarwala", "roll": 27282}, {"id": "st_27291", "name": "Mulla Mohammed bhai Mulla Yusuf bhai Gallam", "roll": 27291}, {"id": "st_27298", "name": "Mulla Qusai bhai Abdulqadir bhai Tadbeer", "roll": 27298}, {"id": "st_27321", "name": "Taher bhai Mulla Abdeali bhai Moussadjy", "roll": 27321}, {"id": "st_28132", "name": "Hatim bs Adnan bs Husain", "roll": 28132}], "6-A (Girls)": [{"id": "st_27042", "name": "Zahabiyah bai Murtaza bhai Begwala", "roll": 27042}, {"id": "st_27051", "name": "Amatullah bai Murtaza bhai Kapasi", "roll": 27051}, {"id": "st_27055", "name": "Insiyah bai Mulla Shabbir bhai Semari Wala", "roll": 27055}, {"id": "st_27056", "name": "Zainab bai Mulla Murtaza bhai Rampurawala", "roll": 27056}, {"id": "st_27067", "name": "Sakina bai Shaikh Huzaifa bhai Dhansura", "roll": 27067}, {"id": "st_27070", "name": "Batul bn Mufaddal bs Shakir", "roll": 27070}, {"id": "st_27079", "name": "Zahabiyah bai Shaikh Mustafa bhai Rasheed", "roll": 27079}, {"id": "st_27096", "name": "Ruqaiyah bai Shaikh Mufaddal bhai Kothawala", "roll": 27096}, {"id": "st_27111", "name": "Insiyah bai Juzer bhai Vakil", "roll": 27111}, {"id": "st_27114", "name": "Ruqaiyah bai Shabbir bhai Ezzy", "roll": 27114}, {"id": "st_27117", "name": "Samina bai Shaikh Yusuf bhai Najmi", "roll": 27117}, {"id": "st_27118", "name": "Fatema bai Shaikh Murtaza bhai Rampurawala", "roll": 27118}, {"id": "st_27128", "name": "Ajab bai Shaikh Shabbir bhai Boriwala", "roll": 27128}, {"id": "st_27132", "name": "Amena bai Mulla Shujauddin bhai Shakir", "roll": 27132}, {"id": "st_27158", "name": "Naqiyah bai Adnaan bhai Borawawala", "roll": 27158}, {"id": "st_27159", "name": "Munira bai Mulla Moiz bhai Lokhandwala", "roll": 27159}, {"id": "st_27163", "name": "Fatema bai Hakimuddin bhai Barwaniwala", "roll": 27163}, {"id": "st_27168", "name": "Nafisa bai Shaikh Moiz bhai Botadwala", "roll": 27168}, {"id": "st_27170", "name": "Fatema bai Shaikh Burhanuddin bhai Rampurwala", "roll": 27170}, {"id": "st_27181", "name": "Sakina bai Mulla Husain bhai Alibhai", "roll": 27181}, {"id": "st_27184", "name": "Farida bai Huzaifa bhai Nagme", "roll": 27184}, {"id": "st_27188", "name": "Jamila bai Murtaza bhai Paliwala", "roll": 27188}, {"id": "st_27190", "name": "Mubarakah bai Moiz bhai Barurwala", "roll": 27190}, {"id": "st_27192", "name": "Ummeayman bai Shabbir bhai Tarwadi", "roll": 27192}, {"id": "st_27231", "name": "Nafisa bai Shaikh Aliasgar bhai Jaorawala", "roll": 27231}, {"id": "st_27296", "name": "Alefiyah bai Abbas bhai Zakir", "roll": 27296}, {"id": "st_27335", "name": "Sakina bai Aliasgar bhai Kashmiri", "roll": 27335}, {"id": "st_27339", "name": "Alefiyah bai Husain bhai Chandkahanjiwala", "roll": 27339}, {"id": "st_29253", "name": "Zahra bs Shz. Husain bs Burhanuddin", "roll": 29253}], "6-B (Boys)": [{"id": "st_27041", "name": "Huzaifa bhai Burhanuddin bhai Dahodwala", "roll": 27041}, {"id": "st_27045", "name": "Mulla Abdulhusain bhai Juzer bhai Darbar", "roll": 27045}, {"id": "st_27047", "name": "Mulla Hussain bhai Yunus bhai Tinwala", "roll": 27047}, {"id": "st_27061", "name": "Mulla Taher bhai Shaikh Mufaddal bhai Hamid (Arsiwala)", "roll": 27061}, {"id": "st_27063", "name": "Aliasgar bhai Shaikh Moiz bhai Badri", "roll": 27063}, {"id": "st_27088", "name": "Mulla Taher bhai Shaikh Mohammed bhai Poonawala", "roll": 27088}, {"id": "st_27090", "name": "Mulla Husain bhai Shaikh Mustafa bhai Moaiyedi", "roll": 27090}, {"id": "st_27122", "name": "Mulla Burhanuddin bhai Mustansir bhai Malik", "roll": 27122}, {"id": "st_27148", "name": "Khuzaima bhai Mulla Ammar bhai Fahim", "roll": 27148}, {"id": "st_27173", "name": "Mulla Hasan bhai Yusuf bhai Jawadwala", "roll": 27173}, {"id": "st_27200", "name": "Mulla Burhanuddin bhai Qaidjoher bhai Cyclewala", "roll": 27200}, {"id": "st_27205", "name": "Mulla Burhanuddin bhai Khuzaima bhai Bundiwala", "roll": 27205}, {"id": "st_27206", "name": "Mulla Husain bhai Huzefa bhai Qamari", "roll": 27206}, {"id": "st_27235", "name": "Husain bh Idris bs Zakir", "roll": 27235}, {"id": "st_27240", "name": "Mustafa bhai Shaikh Husain bhai Ratlamwala", "roll": 27240}, {"id": "st_27251", "name": "Murtaza bh Saifuddin Bs Nomani", "roll": 27251}, {"id": "st_27278", "name": "Mulla Murtaza bhai Ilyas bhai Bombaywala", "roll": 27278}], "7-A (Boys)": [{"id": "st_26698", "name": "Mulla Hatim bhai Huzaifa bhai Vohra", "roll": 26698}, {"id": "st_26707", "name": "Mulla Abbas bhai Husain bhai Kalolwala", "roll": 26707}, {"id": "st_26711", "name": "Abdeali bhai Qaizar bhai Sadikot", "roll": 26711}, {"id": "st_26717", "name": "Mulla Mustafa bhai Shabbir bhai Presswala", "roll": 26717}, {"id": "st_26725", "name": "Adnan bhai Aliasgar bhai Rampurwala", "roll": 26725}, {"id": "st_26732", "name": "Mulla Aziz bhai Moiz bhai Baldiwala", "roll": 26732}, {"id": "st_26733", "name": "Mulla Mufaddal bhai Khuzaima bhai Balaiyawala", "roll": 26733}, {"id": "st_26748", "name": "Mulla Husain bhai Aliakbar bhai Khandwala", "roll": 26748}, {"id": "st_26754", "name": "Mulla Abdulqadir bhai Huzaifa bhai Sirohiwala", "roll": 26754}, {"id": "st_26824", "name": "Mohammed bhai Shaikh Hatim bhai Ratlamwala", "roll": 26824}, {"id": "st_26828", "name": "Mulla Husain bhai Shaikh Kausarali bhai Jamali", "roll": 26828}, {"id": "st_26882", "name": "Mulla Mustansir bhai Shaikh Murtaza bhai Rajkotwala", "roll": 26882}, {"id": "st_26920", "name": "Mulla Hatim bhai Shaikh Aziz bhai Katib", "roll": 26920}, {"id": "st_26923", "name": "Mulla Mohammed bhai Mulla Murtaza bhai Rampurawala", "roll": 26923}, {"id": "st_26924", "name": "Mulla Adam bhai Mulla Juzer bhai Hamid", "roll": 26924}, {"id": "st_26926", "name": "Mulla Mufaddal bhai Qutbuddin bhai Bandukwala", "roll": 26926}, {"id": "st_26968", "name": "Taher bhai Mulla Huzaifa bhai Bahrainwala", "roll": 26968}, {"id": "st_26972", "name": "Mulla Saifuddin bhai Abbasali bhai Kanchwalla", "roll": 26972}, {"id": "st_27324", "name": "Taher bhai Murtaza bhai Saifee", "roll": 27324}], "7-A (Girls)": [{"id": "st_26702", "name": "Batul bai Aliasgar bhai Dawoodi", "roll": 26702}, {"id": "st_26704", "name": "Insiyah bai Husain bhai Lakdawala", "roll": 26704}, {"id": "st_26709", "name": "Zainab bai Firoz bhai Shirpurwala", "roll": 26709}, {"id": "st_26712", "name": "Khadija bai Mulla Ismail bhai Raja", "roll": 26712}, {"id": "st_26713", "name": "Sakina bai Hasanain bhai Kapadia", "roll": 26713}, {"id": "st_26716", "name": "Sakina bai Murtaza bhai Kathiriya", "roll": 26716}, {"id": "st_26718", "name": "Hawra bai Murtaza bhai Loomwala", "roll": 26718}, {"id": "st_26720", "name": "Ummeayman bai Yusuf bhai Rampurawala", "roll": 26720}, {"id": "st_26722", "name": "Zainab bai Shaikh Hatim bhai Vajihi", "roll": 26722}, {"id": "st_26724", "name": "Nafisa bai Mufaddal bhai Bhawanimandiwala", "roll": 26724}, {"id": "st_26728", "name": "Tasneem bai Murtaza bhai Ezzy", "roll": 26728}, {"id": "st_26730", "name": "Rasheeda bai Mulla Abdulqadir bhai Zaheen", "roll": 26730}, {"id": "st_26731", "name": "Tasneem bai Mulla Mustafa bhai Ezzy", "roll": 26731}, {"id": "st_26734", "name": "Husaina bai Khozema bhai Fakhri", "roll": 26734}, {"id": "st_26735", "name": "Maryam bai Jabir bhai Tinwala", "roll": 26735}, {"id": "st_26739", "name": "Sarrah bai Shaikh Yusuf bhai Najmi", "roll": 26739}, {"id": "st_26740", "name": "Amatullah bai Mustafa bhai Mandiwala", "roll": 26740}, {"id": "st_26741", "name": "Insiyah bai Mulla Saifuddin bhai Hamid", "roll": 26741}, {"id": "st_26742", "name": "Ruqaiyah bai Mulla Abbas bhai Vohra", "roll": 26742}, {"id": "st_26744", "name": "Sarrah bai Shaikh Mustafa bhai Saifee", "roll": 26744}, {"id": "st_26745", "name": "Nisreen bai Shaikh Aliasgar bhai Adenwala", "roll": 26745}, {"id": "st_26750", "name": "Ruqaiyah bai Moiz bhai Safri", "roll": 26750}, {"id": "st_26751", "name": "Arwa bai Shaikh Mohammed bhai Merchant", "roll": 26751}, {"id": "st_26752", "name": "Shehrebanu bai Hatim bhai Rampurawala", "roll": 26752}, {"id": "st_26778", "name": "Khadija bai Shaikh Juzar bhai Noorani (Mandviwala)", "roll": 26778}, {"id": "st_26876", "name": "Alefiyah bai Burhanuddin bhai Kagzi", "roll": 26876}, {"id": "st_26880", "name": "Sakina bai Murtaza bhai Rupawala", "roll": 26880}, {"id": "st_26883", "name": "Insiyah bai Mulla Yusuf bhai Rangwala", "roll": 26883}, {"id": "st_26939", "name": "Amatullah bs Mufaddal bs Nomani", "roll": 26939}]};
+</script>
+<script>
+(function(){
+  "use strict";
+
+  /* ============ storage helpers ============ */
+  async function sget(key, fallback){
+    try{
+      const r = await window.storage.get(key, true);
+      return r ? JSON.parse(r.value) : fallback;
+    }catch(e){ return fallback; }
+  }
+  async function sset(key, value){
+    try{ await window.storage.set(key, JSON.stringify(value), true); }catch(e){ console.error("storage set failed", e); }
+  }
+
+  /* ============ state ============ */
+  const state = {
+    screen: 'loading',
+    teachers: [],
+    currentTeacher: null,
+    stds: [],
+    subjectsByStd: {},
+    studentsByStd: {},
+    maxMarks: {},
+    marks: {},           // "std|subject" -> { studentId: {value, enteredBy, enteredByName, at} }
+    selectedStd: null,
+    selectedSubject: null,
+    loginError: '',
+    signupError: '',
+    view: 'entry',        // entry | settings | reports
+    settingsStd: null,
+    reportStd: null,
+    reportSubject: null,
+  };
+
+  function mkey(std, subject){ return std + "|" + subject; }
+  function isAdmin(){ return state.currentTeacher && state.currentTeacher.role === 'admin'; }
+  function fmtDate(ts){
+    if(!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined,{day:'numeric',month:'short'}) + ' · ' + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  }
+
+  /* ============ seed defaults ============ */
+  async function loadAll(){
+    state.teachers = await sget('teachers', null);
+    if(state.teachers === null){
+      state.teachers = [{ id:'admin', password:'admin123', name:'School Admin', role:'admin' }];
+      await sset('teachers', state.teachers);
+    }
+    state.stds = await sget('stds', null);
+    if(state.stds === null){
+      state.stds = (window.__SEED_STDS__ && window.__SEED_STDS__.length) ? window.__SEED_STDS__.slice() : [];
+      await sset('stds', state.stds);
+    }
+    state.subjectsByStd = await sget('subjectsByStd', null);
+    if(state.subjectsByStd === null){
+      state.subjectsByStd = {};
+      state.stds.forEach(s => state.subjectsByStd[s] = (window.__SEED_SUBJECTS__ && window.__SEED_SUBJECTS__[s]) ? window.__SEED_SUBJECTS__[s].slice() : []);
+      await sset('subjectsByStd', state.subjectsByStd);
+    }
+    state.studentsByStd = await sget('studentsByStd', null);
+    if(state.studentsByStd === null){
+      state.studentsByStd = {};
+      state.stds.forEach(s => state.studentsByStd[s] = (window.__SEED_STUDENTS__ && window.__SEED_STUDENTS__[s]) ? window.__SEED_STUDENTS__[s].slice() : []);
+      await sset('studentsByStd', state.studentsByStd);
+    }
+    state.maxMarks = await sget('maxMarks', {});
+    state.marks = await sget('marks', {});
+  }
+
+  /* ============ render root ============ */
+  const root = document.getElementById('app');
+  function render(){
+    if(state.screen === 'loading'){ root.innerHTML = renderLoading(); return; }
+    if(state.screen === 'login'){ root.innerHTML = renderLogin(); attachLoginEvents(); return; }
+    if(state.screen === 'signup'){ root.innerHTML = renderSignup(); attachSignupEvents(); return; }
+    if(state.screen === 'app'){ root.innerHTML = renderAppShell(); attachAppEvents(); return; }
+  }
+
+  function renderLoading(){
+    return `<div class="login-screen"><div style="color:var(--ink-faint); font-family:'Fraunces',serif;">Opening the register…</div></div>`;
+  }
+
+  /* ============ login screen ============ */
+  function renderLogin(){
+    return `
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="login-mark">R</div>
+        <h1 class="login-title">The Register</h1>
+        <div class="login-sub">Formative Assessment · Marks Entry</div>
+        ${state.loginError ? `<div class="login-error" style="display:block">${escapeHtml(state.loginError)}</div>` : ''}
+        <div class="field">
+          <label for="li-id">Teacher ID</label>
+          <input id="li-id" type="text" autocomplete="username" placeholder="e.g. admin">
+        </div>
+        <div class="field">
+          <label for="li-pw">Password</label>
+          <input id="li-pw" type="password" autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" id="li-submit">Log in</button>
+        <div class="login-switch">New here? <a id="go-signup">Create a teacher account</a></div>
+        <div class="demo-note">Admin login — ID <b>admin</b>, password <b>admin123</b><br>Use this once to set up classes, subjects and class lists.</div>
+      </div>
+    </div>`;
+  }
+
+  function attachLoginEvents(){
+    const idEl = document.getElementById('li-id');
+    const pwEl = document.getElementById('li-pw');
+    idEl.focus();
+    function tryLogin(){
+      const id = idEl.value.trim();
+      const pw = pwEl.value;
+      const t = state.teachers.find(t => t.id === id && t.password === pw);
+      if(!t){
+        state.loginError = 'ID or password not recognized. Try again.';
+        render();
+        return;
+      }
+      state.loginError = '';
+      state.currentTeacher = t;
+      state.view = 'entry';
+      state.screen = 'app';
+      render();
+    }
+    document.getElementById('li-submit').addEventListener('click', tryLogin);
+    [idEl,pwEl].forEach(el => el.addEventListener('keydown', e => { if(e.key==='Enter') tryLogin(); }));
+    document.getElementById('go-signup').addEventListener('click', () => { state.signupError=''; state.screen='signup'; render(); });
+  }
+
+  /* ============ signup screen ============ */
+  function renderSignup(){
+    return `
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="login-mark">R</div>
+        <h1 class="login-title">Create account</h1>
+        <div class="login-sub">Register as a teacher</div>
+        ${state.signupError ? `<div class="login-error" style="display:block">${escapeHtml(state.signupError)}</div>` : ''}
+        <div class="field">
+          <label for="su-name">Your name</label>
+          <input id="su-name" type="text" placeholder="e.g. Priya Sharma">
+        </div>
+        <div class="field">
+          <label for="su-id">Choose a Teacher ID</label>
+          <input id="su-id" type="text" autocomplete="username" placeholder="e.g. psharma">
+        </div>
+        <div class="field">
+          <label for="su-pw">Choose a password</label>
+          <input id="su-pw" type="password" autocomplete="new-password" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" id="su-submit">Create account &amp; log in</button>
+        <div class="login-switch">Already have an account? <a id="go-login">Log in</a></div>
+        <div class="demo-note">New accounts are regular teachers. An admin can promote you later in Settings.</div>
+      </div>
+    </div>`;
+  }
+
+  function attachSignupEvents(){
+    document.getElementById('su-name').focus();
+    function trySignup(){
+      const name = document.getElementById('su-name').value.trim();
+      const id = document.getElementById('su-id').value.trim();
+      const pw = document.getElementById('su-pw').value;
+      if(!name || !id || !pw){ state.signupError = 'Please fill in every field.'; render(); return; }
+      if(state.teachers.find(t => t.id === id)){ state.signupError = 'That Teacher ID is already taken.'; render(); return; }
+      const t = { id, password: pw, name, role: 'teacher' };
+      state.teachers.push(t);
+      sset('teachers', state.teachers);
+      state.currentTeacher = t;
+      state.signupError = '';
+      state.view = 'entry';
+      state.screen = 'app';
+      render();
+    }
+    document.getElementById('su-submit').addEventListener('click', trySignup);
+    document.getElementById('go-login').addEventListener('click', () => { state.loginError=''; state.screen='login'; render(); });
+  }
+
+  /* ============ app shell ============ */
+  function renderAppShell(){
+    return `
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">R</div>
+        <div class="brand-text">
+          <div class="name">The Register</div>
+          <div class="sub">Marks Entry</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="who">${escapeHtml(state.currentTeacher.name)}</span>
+        <span class="role-badge ${isAdmin()?'admin':''}">${isAdmin()?'Admin':'Teacher'}</span>
+        <button class="iconbtn ${state.view==='entry'?'active':''}" id="nav-entry">Marks entry</button>
+        <button class="iconbtn ${state.view==='settings'?'active':''}" id="nav-settings">⚙ Settings</button>
+        ${isAdmin() ? `<button class="iconbtn ${state.view==='reports'?'active':''}" id="nav-reports">📋 Reports</button>` : ''}
+        <button class="iconbtn" id="btn-logout">Log out</button>
+      </div>
+    </div>
+    <main><div class="wrap" id="main-wrap"></div></main>
+    `;
+  }
+
+  function attachAppEvents(){
+    bindNav();
+    renderMain();
+  }
+
+  function bindNav(){
+    document.getElementById('nav-entry').addEventListener('click', () => { state.view='entry'; renderMain(); });
+    document.getElementById('nav-settings').addEventListener('click', () => {
+      state.view='settings'; state.settingsStd = state.settingsStd || state.stds[0] || null; renderMain();
+    });
+    const rBtn = document.getElementById('nav-reports');
+    if(rBtn) rBtn.addEventListener('click', () => {
+      state.view='reports'; state.reportStd = state.reportStd || state.stds[0] || null; renderMain();
+    });
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      state.currentTeacher = null; state.selectedStd = null; state.selectedSubject = null;
+      state.view = 'entry'; state.screen = 'login'; render();
+    });
+  }
+
+  function updateNavActiveStates(){
+    const map = { 'nav-entry':'entry', 'nav-settings':'settings', 'nav-reports':'reports' };
+    Object.keys(map).forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.classList.toggle('active', state.view === map[id]);
+    });
+  }
+
+  function renderMain(){
+    const wrap = document.getElementById('main-wrap');
+    if(!wrap) return;
+    updateNavActiveStates();
+
+    if(state.view === 'settings') wrap.innerHTML = renderSettings();
+    else if(state.view === 'reports' && isAdmin()) wrap.innerHTML = renderReports();
+    else wrap.innerHTML = renderPicker();
+
+    if(state.view === 'settings') attachSettingsEvents();
+    else if(state.view === 'reports' && isAdmin()) attachReportsEvents();
+    else attachPickerEvents();
+  }
+
+  /* ============ picker + ledger (marks entry) ============ */
+  function renderPicker(){
+    let html = `<div class="step-block">
+      <div class="step-title">1 · Choose class</div>
+      <div class="tabrow">`;
+    if(state.stds.length === 0){
+      html += `<span class="subtle-note">No classes set up yet — add one in Settings.</span>`;
+    }
+    state.stds.forEach(std => {
+      const active = state.selectedStd === std;
+      const count = (state.studentsByStd[std] || []).length;
+      html += `<button class="tab ${active?'active':''}" data-std="${escapeHtml(std)}">Class ${escapeHtml(std)} <span class="cnt">${count}</span></button>`;
+    });
+    html += `</div></div>`;
+
+    if(state.selectedStd){
+      const subjects = state.subjectsByStd[state.selectedStd] || [];
+      html += `<div class="step-block">
+        <div class="step-title">2 · Choose subject</div>
+        <div class="tabrow">`;
+      if(subjects.length === 0){
+        html += `<span class="subtle-note">No subjects set up for this class yet — add one in Settings.</span>`;
+      }
+      subjects.forEach(sub => {
+        const active = state.selectedSubject === sub;
+        html += `<button class="tab ${active?'active':''}" data-subject="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`;
+      });
+      html += `</div></div>`;
+    }
+
+    if(state.selectedStd && state.selectedSubject){
+      html += `<div class="step-block">
+        <div class="step-title">3 · Enter marks</div>
+        ${renderLedger(state.selectedStd, state.selectedSubject)}
+      </div>`;
+    }
+
+    return html;
+  }
+
+  function renderLedger(std, subject){
+    const students = (state.studentsByStd[std] || []).slice().sort((a,b) => (a.roll||0)-(b.roll||0));
+    const key = mkey(std, subject);
+    const max = state.maxMarks[key] || 100;
+    const saved = state.marks[key] || {};
+
+    if(students.length === 0){
+      return `<div class="ledger-card">
+        <div class="empty-state">
+          <div class="big">No students in Class ${escapeHtml(std)} yet</div>
+          <p>Paste the class list once in Settings and it's ready for every subject and every assessment after that.</p>
+          <button class="btn btn-gold btn-sm" id="empty-goto-settings">Add students</button>
+        </div>
+      </div>`;
+    }
+
+    let rows = students.map(st => {
+      const entry = saved[st.id];
+      const val = entry ? entry.value : '';
+      const filled = val !== '' ? 'filled' : '';
+      return `<div class="ledger-row">
+        <div class="roll">${st.roll ?? ''}</div>
+        <div class="sname">${escapeHtml(st.name)}</div>
+        <div class="marks-input-wrap">
+          <input class="marks-input ${filled}" type="text" inputmode="decimal" data-student="${st.id}"
+                 value="${val}" placeholder="—">
+          <span class="marks-of">/ ${max}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="ledger-card">
+      <div class="ledger-head">
+        <div>
+          <h3>Class ${escapeHtml(std)} · ${escapeHtml(subject)}</h3>
+          <div class="meta">${students.length} student${students.length===1?'':'s'}</div>
+        </div>
+        <div class="maxmarks">
+          Max marks
+          <input type="number" id="maxmarks-input" min="1" value="${max}">
+        </div>
+      </div>
+      <div class="ledger-rows">${rows}</div>
+      <div class="ledger-footer">
+        <div class="save-status" id="save-status">Marks save automatically as you type.</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="stamp" id="save-stamp">✓ Saved</div>
+          <button class="btn btn-primary btn-sm" id="save-btn">Save marks</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function attachPickerEvents(){
+    document.querySelectorAll('[data-std]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.selectedStd = btn.getAttribute('data-std');
+        state.selectedSubject = null;
+        renderMain();
+      });
+    });
+    document.querySelectorAll('[data-subject]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.selectedSubject = btn.getAttribute('data-subject');
+        renderMain();
+        focusFirstMarksInput();
+      });
+    });
+    const emptyBtn = document.getElementById('empty-goto-settings');
+    if(emptyBtn) emptyBtn.addEventListener('click', () => {
+      state.view = 'settings'; state.settingsStd = state.selectedStd; renderMain();
+    });
+
+    const maxInput = document.getElementById('maxmarks-input');
+    if(maxInput){
+      maxInput.addEventListener('change', async () => {
+        const key = mkey(state.selectedStd, state.selectedSubject);
+        const v = parseInt(maxInput.value,10) || 100;
+        state.maxMarks[key] = v;
+        await sset('maxMarks', state.maxMarks);
+        renderMain();
+      });
+    }
+
+    const inputs = Array.from(document.querySelectorAll('.marks-input'));
+    inputs.forEach((inp, idx) => {
+      inp.addEventListener('input', () => {
+        inp.value = inp.value.replace(/[^0-9.]/g, '');
+        inp.classList.toggle('filled', inp.value !== '');
+        markUnsaved();
+      });
+      inp.addEventListener('keydown', e => {
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          if(idx+1 < inputs.length) inputs[idx+1].focus(); else saveMarks();
+        }
+      });
+    });
+
+    const saveBtn = document.getElementById('save-btn');
+    if(saveBtn) saveBtn.addEventListener('click', saveMarks);
+  }
+
+  function focusFirstMarksInput(){
+    setTimeout(() => { const first = document.querySelector('.marks-input'); if(first) first.focus(); }, 30);
+  }
+
+  function markUnsaved(){
+    const status = document.getElementById('save-status');
+    if(status) status.textContent = 'Unsaved changes — press Enter or Save marks.';
+    const stamp = document.getElementById('save-stamp');
+    if(stamp) stamp.classList.remove('show');
+  }
+
+  async function saveMarks(){
+    const key = mkey(state.selectedStd, state.selectedSubject);
+    const existing = state.marks[key] || {};
+    const obj = {};
+    const now = Date.now();
+    document.querySelectorAll('.marks-input').forEach(inp => {
+      const sid = inp.getAttribute('data-student');
+      if(inp.value !== ''){
+        obj[sid] = {
+          value: inp.value,
+          enteredBy: state.currentTeacher.id,
+          enteredByName: state.currentTeacher.name,
+          at: now
+        };
+      }
+    });
+    state.marks[key] = obj;
+    await sset('marks', state.marks);
+    const status = document.getElementById('save-status');
+    if(status) status.textContent = 'All marks saved.';
+    const stamp = document.getElementById('save-stamp');
+    if(stamp) stamp.classList.add('show');
+  }
+
+  /* ============ settings ============ */
+  function renderSettings(){
+    const std = state.settingsStd || state.stds[0] || null;
+    return `
+    <div class="settings-grid">
+
+      <div class="panel">
+        <h3>Classes</h3>
+        <div class="hint">These are the classes you teach or assess.</div>
+        <div class="chip-row" id="std-chips">
+          ${state.stds.map(s => `<span class="chip">Class ${escapeHtml(s)} <span class="x" data-del-std="${escapeHtml(s)}">✕</span></span>`).join('') || '<span class="subtle-note">None yet.</span>'}
+        </div>
+        <div class="inline-add">
+          <input id="new-std" placeholder="e.g. 8-A (Boys)">
+          <button class="btn btn-gold btn-sm" id="add-std">Add class</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Subjects &amp; students</h3>
+        <div class="hint">Set the subject list and class roster for one class at a time.</div>
+        <div class="std-select-mini">
+          <label style="font-size:12.5px;color:var(--ink-soft);">Class:</label>
+          <select id="settings-std-select">
+            ${state.stds.map(s => `<option value="${escapeHtml(s)}" ${s===std?'selected':''}>Class ${escapeHtml(s)}</option>`).join('')}
+          </select>
+        </div>
+
+        ${std ? `
+        <div style="margin-bottom:22px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Subjects for Class ${escapeHtml(std)}</div>
+          <div class="chip-row">
+            ${(state.subjectsByStd[std]||[]).map(sub => {
+              const mm = state.maxMarks[mkey(std,sub)] || 100;
+              return `<span class="chip">${escapeHtml(sub)} <span style="color:var(--ink-faint);font-family:'IBM Plex Mono';font-size:11px;">/${mm}</span> <span class="x" data-del-subject="${escapeHtml(sub)}">✕</span></span>`;
+            }).join('') || '<span class="subtle-note">None yet.</span>'}
+          </div>
+          <div class="inline-add">
+            <input id="new-subject" placeholder="Subject name, e.g. Hindi">
+            <input id="new-subject-max" type="number" min="1" placeholder="Max marks" style="max-width:110px;" value="100">
+            <button class="btn btn-gold btn-sm" id="add-subject">Add subject</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:22px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Students in Class ${escapeHtml(std)} (${(state.studentsByStd[std]||[]).length})</div>
+          <div class="student-list" style="margin-bottom:12px; max-height:260px; overflow:auto;">
+            ${(state.studentsByStd[std]||[]).slice().sort((a,b)=>(a.roll||0)-(b.roll||0)).map(st => `
+              <div class="student-row">
+                <span class="roll">${st.roll ?? ''}</span>
+                <span class="sname">${escapeHtml(st.name)}</span>
+                <span class="x" data-del-student="${st.id}">✕</span>
+              </div>`).join('') || '<span class="subtle-note">No students added yet.</span>'}
+          </div>
+          <div class="inline-add">
+            <input id="new-student-roll" placeholder="Roll #" style="max-width:80px;">
+            <input id="new-student-name" placeholder="Student name">
+            <button class="btn btn-gold btn-sm" id="add-student">Add one</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Paste the whole class list at once</div>
+          <div class="hint" style="margin-bottom:8px;">One student per line: <span class="mono">Roll, Name</span> — e.g. <span class="mono">1, Aarav Mehta</span>. Roll number is optional; if you skip it, students are numbered in the order pasted.</div>
+          <textarea class="bulk-area" id="bulk-students" placeholder="1, Aarav Mehta
+2, Diya Kulkarni
+3, Ishaan Rao"></textarea>
+          <div class="bulk-actions">
+            <button class="btn btn-gold btn-sm" id="bulk-add">Add these to the list</button>
+            <button class="btn btn-red btn-sm" id="bulk-replace">Replace entire list with this</button>
+          </div>
+          <div class="subtle-note">"Replace" clears every student currently in Class ${escapeHtml(std)} and puts only this list in their place — marks already saved for removed students stay in the report history but won't show in the entry screen.</div>
+        </div>
+        ` : `<div class="subtle-note">Add a class first.</div>`}
+      </div>
+
+      ${isAdmin() ? renderTeacherPanel() : ''}
+
+    </div>`;
+  }
+
+  function renderTeacherPanel(){
+    return `
+      <div class="panel">
+        <h3>Teachers</h3>
+        <div class="hint">Admins can see the Reports tab and promote or remove teacher accounts.</div>
+        ${state.teachers.map(t => `
+          <div class="teacher-row">
+            <span class="tname">${escapeHtml(t.name)}</span>
+            <span class="tid">${escapeHtml(t.id)}</span>
+            <span class="role-badge ${t.role==='admin'?'admin':''}">${t.role==='admin'?'Admin':'Teacher'}</span>
+            ${t.id !== state.currentTeacher.id ? `
+              <button class="btn btn-ghost btn-sm" data-toggle-role="${escapeHtml(t.id)}">${t.role==='admin'?'Make teacher':'Make admin'}</button>
+              <button class="btn btn-ghost btn-sm" data-del-teacher="${escapeHtml(t.id)}">Remove</button>
+            ` : `<span class="subtle-note">This is you</span>`}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function parseBulk(text){
+    return text.split('\n').map(line => line.trim()).filter(Boolean).map((line, idx) => {
+      const parts = line.split(/[,\t]/).map(p => p.trim()).filter(Boolean);
+      let roll, name;
+      if(parts.length >= 2 && /^\d+$/.test(parts[0])){
+        roll = parseInt(parts[0],10);
+        name = parts.slice(1).join(', ');
+      } else {
+        roll = idx + 1;
+        name = parts.join(', ');
+      }
+      return { roll, name };
+    }).filter(p => p.name);
+  }
+
+  function attachSettingsEvents(){
+    document.getElementById('add-std').addEventListener('click', async () => {
+      const inp = document.getElementById('new-std');
+      const v = inp.value.trim();
+      if(!v || state.stds.includes(v)) return;
+      state.stds.push(v);
+      state.subjectsByStd[v] = state.subjectsByStd[v] || [];
+      state.studentsByStd[v] = state.studentsByStd[v] || [];
+      await sset('stds', state.stds);
+      await sset('subjectsByStd', state.subjectsByStd);
+      await sset('studentsByStd', state.studentsByStd);
+      state.settingsStd = v;
+      renderMain();
+    });
+    document.querySelectorAll('[data-del-std]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const v = el.getAttribute('data-del-std');
+        state.stds = state.stds.filter(s => s !== v);
+        if(state.settingsStd === v) state.settingsStd = state.stds[0] || null;
+        if(state.selectedStd === v){ state.selectedStd = null; state.selectedSubject = null; }
+        await sset('stds', state.stds);
+        renderMain();
+      });
+    });
+
+    const stdSelect = document.getElementById('settings-std-select');
+    if(stdSelect) stdSelect.addEventListener('change', () => { state.settingsStd = stdSelect.value; renderMain(); });
+
+    const addSubjBtn = document.getElementById('add-subject');
+    if(addSubjBtn) addSubjBtn.addEventListener('click', async () => {
+      const std = state.settingsStd;
+      const inp = document.getElementById('new-subject');
+      const maxInp = document.getElementById('new-subject-max');
+      const v = inp.value.trim();
+      const mm = parseInt(maxInp.value,10) || 100;
+      if(!v) return;
+      state.subjectsByStd[std] = state.subjectsByStd[std] || [];
+      if(!state.subjectsByStd[std].includes(v)) state.subjectsByStd[std].push(v);
+      state.maxMarks[mkey(std,v)] = mm;
+      await sset('subjectsByStd', state.subjectsByStd);
+      await sset('maxMarks', state.maxMarks);
+      renderMain();
+    });
+    document.querySelectorAll('[data-del-subject]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const std = state.settingsStd;
+        const v = el.getAttribute('data-del-subject');
+        state.subjectsByStd[std] = (state.subjectsByStd[std]||[]).filter(s => s !== v);
+        if(state.selectedSubject === v) state.selectedSubject = null;
+        await sset('subjectsByStd', state.subjectsByStd);
+        renderMain();
+      });
+    });
+
+    const addStudentBtn = document.getElementById('add-student');
+    if(addStudentBtn) addStudentBtn.addEventListener('click', async () => {
+      const std = state.settingsStd;
+      const nameInp = document.getElementById('new-student-name');
+      const rollInp = document.getElementById('new-student-roll');
+      const name = nameInp.value.trim();
+      if(!name) return;
+      const roll = rollInp.value.trim() ? parseInt(rollInp.value,10) : ((state.studentsByStd[std]||[]).length + 1);
+      const id = 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      state.studentsByStd[std] = state.studentsByStd[std] || [];
+      state.studentsByStd[std].push({ id, name, roll });
+      await sset('studentsByStd', state.studentsByStd);
+      renderMain();
+    });
+    document.querySelectorAll('[data-del-student]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const std = state.settingsStd;
+        const id = el.getAttribute('data-del-student');
+        state.studentsByStd[std] = (state.studentsByStd[std]||[]).filter(s => s.id !== id);
+        await sset('studentsByStd', state.studentsByStd);
+        renderMain();
+      });
+    });
+
+    const bulkAddBtn = document.getElementById('bulk-add');
+    if(bulkAddBtn) bulkAddBtn.addEventListener('click', async () => {
+      const std = state.settingsStd;
+      const text = document.getElementById('bulk-students').value;
+      const parsed = parseBulk(text);
+      if(parsed.length === 0) return;
+      const existing = state.studentsByStd[std] || [];
+      const existingNames = new Set(existing.map(s => s.name.toLowerCase()));
+      parsed.forEach(p => {
+        if(!existingNames.has(p.name.toLowerCase())){
+          existing.push({ id: 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), name: p.name, roll: p.roll });
+        }
+      });
+      state.studentsByStd[std] = existing;
+      await sset('studentsByStd', state.studentsByStd);
+      renderMain();
+    });
+    const bulkReplaceBtn = document.getElementById('bulk-replace');
+    if(bulkReplaceBtn) bulkReplaceBtn.addEventListener('click', async () => {
+      const std = state.settingsStd;
+      const text = document.getElementById('bulk-students').value;
+      const parsed = parseBulk(text);
+      if(parsed.length === 0) return;
+      if(!confirm(`Replace the entire student list for Class ${std} with ${parsed.length} students? This can't be undone.`)) return;
+      state.studentsByStd[std] = parsed.map(p => ({ id: 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), name: p.name, roll: p.roll }));
+      await sset('studentsByStd', state.studentsByStd);
+      renderMain();
+    });
+
+    if(isAdmin()){
+      document.querySelectorAll('[data-toggle-role]').forEach(el => {
+        el.addEventListener('click', async () => {
+          const id = el.getAttribute('data-toggle-role');
+          const t = state.teachers.find(t => t.id === id);
+          if(t) t.role = t.role === 'admin' ? 'teacher' : 'admin';
+          await sset('teachers', state.teachers);
+          renderMain();
+        });
+      });
+      document.querySelectorAll('[data-del-teacher]').forEach(el => {
+        el.addEventListener('click', async () => {
+          const id = el.getAttribute('data-del-teacher');
+          if(!confirm('Remove this teacher account?')) return;
+          state.teachers = state.teachers.filter(t => t.id !== id);
+          await sset('teachers', state.teachers);
+          renderMain();
+        });
+      });
+    }
+  }
+
+  /* ============ reports (admin only) ============ */
+  function renderReports(){
+    const std = state.reportStd || state.stds[0] || null;
+    let html = `<div class="step-block">
+      <div class="step-title">Overview — completion by class &amp; subject</div>
+      <div class="panel" style="overflow:auto;">
+        <table class="overview-table">
+          <thead><tr><th>Class</th><th>Subject</th><th>Entered</th><th>Last activity</th></tr></thead>
+          <tbody>`;
+    let anyRow = false;
+    state.stds.forEach(s => {
+      const subs = state.subjectsByStd[s] || [];
+      const total = (state.studentsByStd[s] || []).length;
+      subs.forEach(sub => {
+        anyRow = true;
+        const key = mkey(s, sub);
+        const entries = state.marks[key] || {};
+        const count = Object.keys(entries).length;
+        let last = 0, lastBy = '';
+        Object.values(entries).forEach(e => { if(e.at > last){ last = e.at; lastBy = e.enteredByName; } });
+        const pillClass = total > 0 && count === total ? 'complete' : (count === 0 ? 'empty' : '');
+        html += `<tr data-rep-std="${escapeHtml(s)}" data-rep-subject="${escapeHtml(sub)}">
+          <td>Class ${escapeHtml(s)}</td>
+          <td>${escapeHtml(sub)}</td>
+          <td><span class="prog-pill ${pillClass}">${count} / ${total}</span></td>
+          <td>${last ? fmtDate(last) + ' by ' + escapeHtml(lastBy) : '—'}</td>
+        </tr>`;
+      });
+    });
+    if(!anyRow) html += `<tr><td colspan="4"><span class="subtle-note">No subjects set up yet.</span></td></tr>`;
+    html += `</tbody></table></div></div>`;
+
+    html += `<div class="step-block">
+      <div class="step-title">Look up an entry — who entered what</div>
+      <div class="tabrow">`;
+    state.stds.forEach(s => {
+      html += `<button class="tab ${state.reportStd===s?'active':''}" data-rstd="${escapeHtml(s)}">Class ${escapeHtml(s)}</button>`;
+    });
+    html += `</div></div>`;
+
+    if(std){
+      const subs = state.subjectsByStd[std] || [];
+      html += `<div class="step-block"><div class="tabrow">`;
+      subs.forEach(sub => {
+        html += `<button class="tab ${state.reportSubject===sub?'active':''}" data-rsubject="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`;
+      });
+      if(subs.length === 0) html += `<span class="subtle-note">No subjects for Class ${escapeHtml(std)}.</span>`;
+      html += `</div></div>`;
+    }
+
+    if(std && state.reportSubject){
+      html += renderAuditLedger(std, state.reportSubject);
+    }
+
+    return html;
+  }
+
+  function renderAuditLedger(std, subject){
+    const students = (state.studentsByStd[std] || []).slice().sort((a,b) => (a.roll||0)-(b.roll||0));
+    const key = mkey(std, subject);
+    const max = state.maxMarks[key] || 100;
+    const entries = state.marks[key] || {};
+
+    if(students.length === 0){
+      return `<div class="ledger-card"><div class="empty-state"><div class="big">No students in Class ${escapeHtml(std)}</div></div></div>`;
+    }
+
+    const rows = students.map(st => {
+      const e = entries[st.id];
+      return `<div class="ledger-row with-audit">
+        <div class="roll">${st.roll ?? ''}</div>
+        <div class="sname">${escapeHtml(st.name)}</div>
+        <div class="audit-val">${e ? e.value + ' <span style="color:var(--ink-faint);font-weight:500;">/ ' + max + '</span>' : '<span style="color:var(--ink-faint);font-weight:500;">—</span>'}</div>
+        <div class="audit-by">${e ? escapeHtml(e.enteredByName) + '<br>' + fmtDate(e.at) : '<span class="subtle-note">Not entered</span>'}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="ledger-card">
+      <div class="ledger-head">
+        <div><h3>Class ${escapeHtml(std)} · ${escapeHtml(subject)}</h3><div class="meta">${students.length} student${students.length===1?'':'s'} · audit view</div></div>
+      </div>
+      <div class="ledger-rows">${rows}</div>
+    </div>`;
+  }
+
+  function attachReportsEvents(){
+    document.querySelectorAll('[data-rep-std]').forEach(row => {
+      row.addEventListener('click', () => {
+        state.reportStd = row.getAttribute('data-rep-std');
+        state.reportSubject = row.getAttribute('data-rep-subject');
+        renderMain();
+      });
+    });
+    document.querySelectorAll('[data-rstd]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.reportStd = btn.getAttribute('data-rstd');
+        state.reportSubject = null;
+        renderMain();
+      });
+    });
+    document.querySelectorAll('[data-rsubject]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.reportSubject = btn.getAttribute('data-rsubject');
+        renderMain();
+      });
+    });
+  }
+
+  /* ============ utils ============ */
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  /* ============ boot ============ */
+  (async function boot(){
+    render();
+    await loadAll();
+    state.screen = 'login';
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
