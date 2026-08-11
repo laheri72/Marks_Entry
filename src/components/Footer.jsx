@@ -19,7 +19,7 @@ export const Footer = () => {
           </div>
 
           <div className="footer-copy">
-            &copy; {new Date().getFullYear()} <strong>Maskan1447</strong>. All rights Reserved | Maintained by{' '}
+            &copy; {new Date().getFullYear()} | All rights Reserved | Maintained by{' '}
             <a
               href="https://github.com/laheri72/"
               target="_blank"
