@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, Check, UserPlus, FileSpreadsheet, FileText, Search, Zap, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { exportService } from '../services/exportService';
+import { storageService } from '../services/storageService';
 
 export const LedgerRoster = ({
   std,
@@ -26,7 +27,7 @@ export const LedgerRoster = ({
 
   const inputRefs = useRef({});
 
-  // Initialize local values when Class or Subject changes
+  // 1. Initialize local values when Class or Subject changes
   useEffect(() => {
     const initial = {};
     students.forEach((st) => {
@@ -48,22 +49,39 @@ export const LedgerRoster = ({
     }, 60);
   }, [std, subject]);
 
-  // Input change handler with strict Max Marks validation & Auto-capping
+  // 2. Attach Live Cloud Firestore Realtime Listener for active Class + Subject
+  useEffect(() => {
+    if (!std || !subject) return;
+
+    const unsub = storageService.subscribeToRoster(std, subject, (cloudRosterMarks) => {
+      if (!cloudRosterMarks) return;
+      setLocalValues((prev) => {
+        const next = { ...prev };
+        Object.entries(cloudRosterMarks).forEach(([sid, entry]) => {
+          if (entry && entry.value !== undefined) {
+            next[sid] = entry.value;
+          }
+        });
+        return next;
+      });
+      setShowStamp(true);
+    });
+
+    return () => unsub();
+  }, [std, subject]);
+
+  // Input change handler
   const handleInputChange = (studentId, rawValue) => {
-    // Sanitize input: allow digits, single decimal, or 'A' (Absent) / 'E' (Exempt)
     let clean = rawValue.toUpperCase().replace(/[^0-9.AE]/g, '');
     
-    // Disallow multiple decimals
     const parts = clean.split('.');
     if (parts.length > 2) {
       clean = parts[0] + '.' + parts.slice(1).join('');
     }
 
-    // Check if numeric value exceeds maxMarks
     if (clean !== '' && clean !== 'A' && clean !== 'E') {
       const num = parseFloat(clean);
       if (!isNaN(num) && num > maxMarks) {
-        // Auto-cap to maxMarks and inform teacher
         clean = String(maxMarks);
         setStatusMessage(`⚠️ Mark auto-capped to Max Marks (${maxMarks}).`);
       } else {
@@ -87,7 +105,6 @@ export const LedgerRoster = ({
       } else {
         const num = parseFloat(val);
         if (!isNaN(num)) {
-          // Clamp value between 0 and maxMarks
           const clamped = Math.min(Math.max(0, num), maxMarks);
           sanitized[sid] = String(clamped);
         }
@@ -99,9 +116,14 @@ export const LedgerRoster = ({
   const executeSave = async () => {
     const sanitized = getSanitizedLocalValues();
     setLocalValues(sanitized);
-    await onSave(std, subject, sanitized);
-    setStatusMessage('All marks saved securely.');
-    setShowStamp(true);
+    try {
+      await onSave(std, subject, sanitized);
+      setStatusMessage('All marks saved securely to Cloud Database.');
+      setShowStamp(true);
+    } catch (cloudErr) {
+      console.error("Save error:", cloudErr);
+      setStatusMessage(`⚠️ Saved locally, but Cloud sync failed: ${cloudErr.message || 'Check Firestore Rules'}`);
+    }
   };
 
   // Keyboard Navigation
@@ -204,7 +226,6 @@ export const LedgerRoster = ({
     if (val !== undefined && val !== '' && val !== 'A' && val !== 'E') {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-        // Strict guard: clamp number between 0 and maxMarks for mathematical sanity
         const clampedNum = Math.min(Math.max(0, num), maxMarks);
         filledCount++;
         totalScore += clampedNum;

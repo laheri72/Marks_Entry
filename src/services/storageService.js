@@ -1,5 +1,5 @@
 // Storage Service for The Register
-// Primary Source of Truth: Firebase Cloud Firestore (ajs-marks-app-2026) with Local Cache Fallback
+// Granular Cloud Firestore Sync for Real-Time Multi-Device Assessment Rosters
 
 import { db } from '../config/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -13,11 +13,15 @@ const STORAGE_KEYS = {
   MARKS: 'tr_marks_v2'
 };
 
+// Helper: Sanitize document IDs for Firestore (replaces slashes and illegal chars)
+const sanitizeDocId = (id) => String(id).replace(/[\/\s()]/g, '_');
+
 export const storageService = {
-  // Read Data: Queries Realtime Cloud Firestore first, falls back to Local Cache
+  // Read Master Key (Teachers, Stds, Subjects, Students, MaxMarks)
   async get(key, fallback = null) {
     try {
-      const docRef = doc(db, "register_data", key);
+      const cleanKey = sanitizeDocId(key);
+      const docRef = doc(db, "school_master", cleanKey);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -28,10 +32,10 @@ export const storageService = {
         }
       }
     } catch (cloudErr) {
-      console.warn(`[Firestore Cloud Note] '${key}':`, cloudErr.message);
+      console.warn(`[Firestore Master Read Note] '${key}':`, cloudErr.message);
     }
 
-    // Local Storage Cache Fallback if offline
+    // LocalStorage Fallback
     try {
       const val = localStorage.getItem(key);
       return val ? JSON.parse(val) : fallback;
@@ -40,31 +44,87 @@ export const storageService = {
     }
   },
 
-  // Write Data: Immediate Local Storage cache update + Real-Time Cloud Firestore Sync
+  // Write Master Key
   async set(key, value) {
-    // 1. Immediate Local Storage Cache
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.error("Local storage error:", e);
-    }
+    } catch (e) {}
 
-    // 2. Real-Time Cloud Firestore Sync across all devices
     try {
-      const docRef = doc(db, "register_data", key);
+      const cleanKey = sanitizeDocId(key);
+      const docRef = doc(db, "school_master", cleanKey);
       await setDoc(docRef, {
         payload: value,
         updatedAt: Date.now()
       }, { merge: true });
     } catch (cloudErr) {
-      console.warn(`[Firestore Sync Note] Could not write '${key}' to Cloud DB:`, cloudErr.message);
+      console.error(`[Firestore Master Write Error] '${key}':`, cloudErr.message);
+      throw cloudErr;
     }
   },
 
-  // Real-Time Cloud Subscription Listener: Instantly updates all devices when any teacher enters marks
-  subscribeToKey(key, callback) {
+  // Save Marks Roster for specific Class + Subject (Granular Cloud Document)
+  async saveClassSubjectMarks(std, subject, marksMapKeyObj, teacher) {
+    const docId = sanitizeDocId(`${std}_${subject}`);
+    
+    // 1. Update Local Storage cache
     try {
-      const docRef = doc(db, "register_data", key);
+      const allMarks = JSON.parse(localStorage.getItem(STORAGE_KEYS.MARKS) || '{}');
+      allMarks[`${std}|${subject}`] = marksMapKeyObj;
+      localStorage.setItem(STORAGE_KEYS.MARKS, JSON.stringify(allMarks));
+    } catch (e) {}
+
+    // 2. Write to Granular Cloud Firestore Document
+    try {
+      const docRef = doc(db, "marks_rosters", docId);
+      await setDoc(docRef, {
+        std,
+        subject,
+        marks: marksMapKeyObj,
+        updatedBy: teacher?.name || teacher?.email || 'Teacher',
+        updatedAt: Date.now()
+      }, { merge: true });
+
+      // Also update master marks summary doc
+      const masterMarksRef = doc(db, "school_master", STORAGE_KEYS.MARKS);
+      const masterSnap = await getDoc(masterMarksRef);
+      const masterData = masterSnap.exists() ? (masterSnap.data()?.payload || {}) : {};
+      masterData[`${std}|${subject}`] = marksMapKeyObj;
+      await setDoc(masterMarksRef, { payload: masterData, updatedAt: Date.now() }, { merge: true });
+
+    } catch (cloudErr) {
+      console.error(`[Firestore Roster Write Error] '${std} ${subject}':`, cloudErr.message);
+      throw cloudErr;
+    }
+  },
+
+  // Subscribe to Real-Time Cloud Updates for a Specific Class + Subject Roster
+  subscribeToRoster(std, subject, callback) {
+    if (!std || !subject) return () => {};
+    const docId = sanitizeDocId(`${std}_${subject}`);
+
+    try {
+      const docRef = doc(db, "marks_rosters", docId);
+      return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data()?.marks;
+          if (data !== undefined && data !== null) {
+            callback(data);
+          }
+        }
+      }, (err) => {
+        console.warn(`[Firestore Roster Listener Error] '${docId}':`, err.message);
+      });
+    } catch (e) {
+      return () => {};
+    }
+  },
+
+  // Subscribe to Master Keys (STDS, SUBJECTS, STUDENTS, MARKS)
+  subscribeToKey(key, callback) {
+    const cleanKey = sanitizeDocId(key);
+    try {
+      const docRef = doc(db, "school_master", cleanKey);
       return onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           const cloudData = docSnap.data()?.payload;
@@ -73,7 +133,7 @@ export const storageService = {
           }
         }
       }, (err) => {
-        console.warn(`[Firestore Listener Note] '${key}':`, err.message);
+        console.warn(`[Firestore Master Listener Error] '${key}':`, err.message);
       });
     } catch (e) {
       return () => {};

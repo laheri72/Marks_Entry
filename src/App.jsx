@@ -8,7 +8,7 @@ import { SettingsView } from './components/SettingsView';
 import { SEED_STDS, SEED_SUBJECTS, SEED_STUDENTS } from './seedData';
 import { storageService, STORAGE_KEYS } from './services/storageService';
 
-// Error Boundary Fallback to prevent white blank screen in production
+// Error Boundary Fallback
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -88,7 +88,7 @@ const MainApp = () => {
     }
     loadAppData();
 
-    // Subscribe to Real-Time Cloud DB updates across devices!
+    // Subscribe to Real-Time Cloud DB updates across devices
     const unsubMarks = storageService.subscribeToKey(STORAGE_KEYS.MARKS, (newMarks) => {
       if (newMarks) setMarksMap(newMarks);
     });
@@ -135,7 +135,9 @@ const MainApp = () => {
 
     const nextMarksMap = { ...marksMap, [key]: updatedKeyObj };
     setMarksMap(nextMarksMap);
-    await storageService.set(STORAGE_KEYS.MARKS, nextMarksMap);
+
+    // Save to Granular Cloud Firestore Document & propagate errors if Cloud fails
+    await storageService.saveClassSubjectMarks(std, subject, updatedKeyObj, currentUser);
   };
 
   // Master Data Save Handler from Settings
